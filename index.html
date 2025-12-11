@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Quizzes</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+        }
+        .container {
+            min-height: 100vh;
+        }
+        .selection-button {
+            transition: all 0.2s ease;
+        }
+        .selection-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        .selection-button.active {
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.5), 0 4px 6px -4px rgba(37, 99, 235, 0.5);
+            border-color: #2563eb;
+            background-color: #1e40af;
+        }
+        #formulaDisplay {
+            min-height: 2.5rem; 
+        }
+        .equation-block {
+            background-color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin-top: 0.75rem;
+            margin-bottom: 0.75rem;
+            max-width: 100%;
+            width: fit-content; 
+            margin-left: auto;
+            margin-right: auto;
+            text-align: left;
+            font-size: 1rem;
+            line-height: 1.8;
+        }
+        #solutionText {
+            line-height: 1.6;
+            text-align: left;
+        }
+        .system-equations {
+            display: inline-block;
+            vertical-align: middle;
+            text-align: left;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+<div class="container flex flex-col items-center p-4 sm:p-8">
+    
+    <!-- Dynamic Header -->
+    <header class="w-full max-w-2xl text-center mb-8">
+        <h1 id="mainTitle" class="text-4xl font-bold text-gray-800 mb-2">Math Quizzes</h1>
+        <p id="headerSubtitle" class="text-gray-600">Select a subject to begin.</p>
+    </header>
+    
+    <!-- Screen 0: Main Menu (Subject Selection) -->
+    <div id="mainMenu" class="w-full max-w-2xl flex flex-col items-center">
+        <div class="flex flex-wrap justify-center gap-4 w-full">
+            <button id="btnSimultaneous" class="selection-button bg-indigo-600 text-white font-bold py-6 px-10 rounded-xl shadow-lg hover:bg-indigo-700 w-full sm:w-5/12 text-xl flex flex-col items-center justify-center gap-2">
+                <span>Simultaneous Equations</span>
+                <span class="text-sm font-normal opacity-75">{ x + y = 5, 2x - y = 1 }</span>
+            </button>
+            <button id="btnBasicAlgebra" class="selection-button bg-teal-600 text-white font-bold py-6 px-10 rounded-xl shadow-lg hover:bg-teal-700 w-full sm:w-5/12 text-xl flex flex-col items-center justify-center gap-2">
+                <span>Basic Algebra</span>
+                <span class="text-sm font-normal opacity-75">3x - 5 = x + 7</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Screen 1: Topic Selector (Simultaneous Only) -->
+    <div id="topicSelector" class="hidden w-full max-w-2xl flex flex-col items-center">
+        <div class="w-full flex justify-start mb-4">
+            <button id="backToMenuBtn" class="text-sm text-gray-500 hover:text-indigo-600 flex items-center">
+                &larr; Back to Main Menu
+            </button>
+        </div>
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Choose Topic</h2>
+        <div class="flex flex-wrap justify-center gap-4 w-full">
+            <button data-topic="solve_equations" class="selection-button bg-blue-500 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-blue-600 w-full sm:w-1/3">Solve Equations</button>
+            <button data-topic="formulate_equations" class="selection-button bg-purple-500 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-purple-600 w-full sm:w-1/3">Formulate Equations (Word Problems)</button>
+        </div>
+    </div>
+
+    <!-- Screen 2: Difficulty Selector -->
+    <div id="difficultySelector" class="hidden flex flex-col items-center w-full max-w-2xl mt-8">
+        <div class="w-full flex justify-start mb-4 hidden" id="diffBackContainer">
+            <!-- Back button injected via JS based on flow -->
+        </div>
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4" id="difficultyPrompt">Choose Difficulty</h2>
+        <div class="flex flex-wrap justify-center gap-4 w-full">
+            <button data-difficulty="simple" class="selection-button bg-green-500 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-green-600 w-full sm:w-1/3">Simple</button>
+            <button data-difficulty="difficult" class="selection-button bg-red-500 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-red-600 w-full sm:w-1/3">Difficult</button>
+        </div>
+        <button id="diffCancelBtn" class="mt-6 text-sm text-gray-500 hover:text-indigo-600">
+            Cancel
+        </button>
+    </div>
+
+
+    <!-- Quiz Card -->
+    <div id="quizCard" class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-lg transition-all duration-300 transform scale-100 opacity-0 hidden mt-8 relative">
+        
+        <!-- In-Quiz Navigation -->
+        <div class="absolute top-4 left-4">
+            <button id="quizBackToMenu" class="text-xs font-semibold text-gray-400 hover:text-gray-600 transition">
+                &larr; Main Menu
+            </button>
+        </div>
+
+        <h2 id="quizTitle" class="text-2xl font-semibold text-center mb-4 text-gray-700 mt-2"></h2>
+        
+        <div class="bg-blue-50 p-4 rounded-lg mb-6 border-l-4 border-blue-500">
+            <p id="formulaDisplay" class="text-center text-xl font-mono text-blue-700 h-10 flex items-center justify-center">
+            </p>
+            <div id="questionText" class="text-center text-lg mt-2 text-gray-800 font-medium">
+            </div>
+        </div>
+
+        <div id="inputContainer" class="flex flex-col sm:flex-row gap-4 mb-4">
+            <input id="answerInput" placeholder="Enter your answer..." class="flex-grow p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+            <button id="submitButton" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-700 transition duration-150 transform hover:scale-[1.01]">
+                Submit Answer
+            </button>
+        </div>
+
+        <div id="feedbackContainer">
+            <p id="resultMessage" class="text-center font-semibold h-6"></p>
+            <div id="solutionDisplay" class="hidden mt-4 p-4 rounded-lg">
+                <p class="font-bold mb-2 text-xl" id="solutionTitle"></p>
+                <div id="solutionText" class="text-sm font-medium"></div>
+            </div>
+            <button id="nextButton" class="hidden w-full mt-4 bg-purple-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-purple-700 transition duration-150 transform hover:scale-[1.01]">
+                Next Question
+            </button>
+        </div>
+
+        <div class="text-center mt-6 pt-4 border-t border-gray-200">
+            <p class="text-sm text-gray-500">
+                Difficulty: <span id="difficultyTracker" class="text-lg font-bold text-gray-700 capitalize">N/A</span> | 
+                Subject: <span id="subjectTracker" class="text-lg font-bold text-gray-700 capitalize">N/A</span>
+            </p>
+            <p class="text-sm text-gray-500 mt-1">
+                Question: <span id="currentQuestionNumber" class="text-lg font-bold text-gray-700">0</span> / <span id="maxQuestionsTracker" class="text-lg font-bold text-gray-700">10</span> |
+                Score: <span id="scoreTracker" class="text-lg font-bold text-gray-700">0</span>
+            </p>
+            
+            <!-- I'm Done Button -->
+            <button id="imDoneButton" class="mt-4 text-sm font-bold text-orange-500 border border-orange-200 bg-orange-50 hover:bg-orange-100 hover:border-orange-300 rounded-full px-4 py-1 transition">
+                I'm Done (Skip to Results)
+            </button>
+        </div>
+    </div>
+
+    <!-- Results Card -->
+    <div id="resultsCard" class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-lg text-center transition-all duration-300 transform scale-100 opacity-0 hidden mt-8">
+        <h2 class="text-3xl font-bold text-green-700 mb-4">Quiz Complete!</h2>
+        <p class="text-xl text-gray-700 mb-6">Your final score on the <span id="finalDifficulty"></span> <span id="finalTopic"></span> quiz is:</p>
+        <div class="text-6xl font-extrabold text-blue-600 mb-8">
+            <span id="finalScore">0</span> / <span id="finalTotal">10</span>
+        </div>
+        <p class="text-gray-500 mb-8">Ready for another practice session?</p>
+        <button id="restartButton" class="bg-purple-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-purple-700 transition duration-150 transform hover:scale-[1.03]">
+            Back to Main Menu
+        </button>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="customModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden flex items-center justify-center z-50">
+        <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modalTitle">Confirmation</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500" id="modalMessage">Are you sure?</p>
+                </div>
+                <div class="items-center px-4 py-3 flex justify-center gap-4">
+                    <button id="modalYesBtn" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-24 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                        Yes
+                    </button>
+                    <button id="modalNoBtn" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-24 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        No
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+    let db, auth, userId = null;
+
+    if (Object.keys(firebaseConfig).length > 0) {
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        onAuthStateChanged(auth, (user) => { if (user) userId = user.uid; });
+        if (initialAuthToken) {
+            signInWithCustomToken(auth, initialAuthToken).catch(error => { signInAnonymously(auth); });
+        } else {
+            signInAnonymously(auth);
+        }
+    }
+
+    const MAX_QUESTIONS = 10; 
+    
+    // UI References
+    const mainMenu = document.getElementById('mainMenu');
+    const topicSelector = document.getElementById('topicSelector');
+    const difficultySelector = document.getElementById('difficultySelector');
+    const quizCard = document.getElementById('quizCard');
+    const resultsCard = document.getElementById('resultsCard');
+    const mainTitle = document.getElementById('mainTitle');
+    const headerSubtitle = document.getElementById('headerSubtitle');
+
+    // Buttons
+    const btnSimultaneous = document.getElementById('btnSimultaneous');
+    const btnBasicAlgebra = document.getElementById('btnBasicAlgebra');
+    const backToMenuBtn = document.getElementById('backToMenuBtn');
+    const diffCancelBtn = document.getElementById('diffCancelBtn'); // Renamed from backToTopicBtn for clarity
+    const quizBackToMenu = document.getElementById('quizBackToMenu');
+    const topicButtons = document.querySelectorAll('#topicSelector .selection-button');
+    const difficultyButtons = document.querySelectorAll('#difficultySelector .selection-button');
+    const difficultButton = document.querySelector('[data-difficulty="difficult"]');
+    const answerInput = document.getElementById('answerInput');
+    const submitButton = document.getElementById('submitButton');
+    const nextButton = document.getElementById('nextButton');
+    const imDoneButton = document.getElementById('imDoneButton');
+    const restartButton = document.getElementById('restartButton');
+    const backToStartButton = document.getElementById('backToStartButton');
+
+    // Modal
+    const customModal = document.getElementById('customModal');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalYesBtn = document.getElementById('modalYesBtn');
+    const modalNoBtn = document.getElementById('modalNoBtn');
+    let pendingModalAction = null;
+
+    // Trackers
+    const scoreTracker = document.getElementById('scoreTracker');
+    const currentQuestionNumber = document.getElementById('currentQuestionNumber');
+    const maxQuestionsTracker = document.getElementById('maxQuestionsTracker');
+    const difficultyTracker = document.getElementById('difficultyTracker');
+    const subjectTracker = document.getElementById('subjectTracker');
+
+    // State
+    let currentSubject = null; // 'simultaneous' or 'algebra'
+    let currentDifficulty = null;
+    let currentTopic = null; // 'solve_equations', 'formulate_equations', 'solve_algebra'
+    let currentQuestion = null;
+    let currentStep = 'step1'; 
+    let score = 0;
+    let totalQuestions = 0; 
+    let sessionActive = false; 
+
+    // --- Utils ---
+    const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const toFractionString = (num) => {
+        if (num === 0) return '0'; if (num % 1 === 0) return num.toString();
+        const sign = num < 0 ? '-' : ''; const absNum = Math.abs(num); const fractionalPart = absNum - Math.floor(absNum);
+        const tolerance = 1.0E-6; let numerator = 0; let denominator = 1;
+        for (let d = 2; d <= 10; d++) {
+            let n = Math.round(fractionalPart * d);
+            if (Math.abs(fractionalPart * d - n) < tolerance) {
+                numerator = n; denominator = d; const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b));
+                const commonDivisor = gcd(numerator, denominator); numerator /= commonDivisor; denominator /= commonDivisor; break;
+            }
+        }
+        const integerPart = Math.floor(absNum); numerator = integerPart * denominator + numerator;
+        return sign + numerator + '/' + denominator;
+    };
+    const formatCoefficient = (a, variable) => {
+        if (typeof a === 'string' && a.includes('/')) {
+            const parts = a.split('/'); let num = parseInt(parts[0]); const den = parseInt(parts[1]);
+            let sign = ''; if (num < 0) { sign = '-'; num = Math.abs(num); }
+            if (num === 1) return sign + variable + '/' + den; return sign + num + '/' + den + variable;
+        }
+        if (a === 1) return variable; if (a === -1) return '-' + variable; return a + variable;
+    };
+    
+    // UPDATED formatTerm to correctly handle spacing and signs for string fractions
+    const formatTerm = (coeff, variable, includeSign = true) => {
+        if (coeff === 0 || coeff === '0') return '';
+        
+        let termStr = '';
+        let isNegative = false;
+        
+        // Handle Fraction String
+        if (typeof coeff === 'string' && coeff.includes('/')) {
+            if (coeff.startsWith('-')) {
+                isNegative = true;
+                // Remove '-' for formatting the absolute part
+                termStr = formatCoefficient(coeff.substring(1), variable);
+            } else {
+                isNegative = false;
+                termStr = formatCoefficient(coeff, variable);
+            }
+        } 
+        // Handle Numeric
+        else {
+            isNegative = coeff < 0;
+            const absCoeff = Math.abs(coeff);
+            if (absCoeff === 1) {
+                termStr = variable;
+            } else {
+                termStr = absCoeff + variable;
+            }
+        }
+
+        // Add Sign
+        if (isNegative) {
+            return ' - ' + termStr;
+        } else if (includeSign) {
+            return ' + ' + termStr;
+        } else {
+            return termStr;
+        }
+    };
+
+    // --- Answer Checking Functions (Missing in previous snippet, causing ReferenceError) ---
+    const parseTerms = (side, variables) => {
+        let terms = { A: 0, B: 0, C: 0 }; 
+        side = side.toLowerCase().replace(/\s/g, '');
+        
+        // Handle shorthand like 2(x+6) -> 2x+12
+        side = side.replace(/(\d+)\((.)\s*([+-])\s*(.)\)/g, (match, coeff, var1, sign, term2) => {
+            const A_new = parseFloat(coeff);
+            let result = `${A_new}${var1}`;
+            const isVar2 = term2.match(/[a-z]/);
+            if (isVar2) {
+                const B_new = (sign === '-') ? -A_new : A_new;
+                result += (B_new < 0 ? B_new : `+${B_new}`) + term2;
+            } else {
+                const C_new = (sign === '-') ? -A_new * parseFloat(term2) : A_new * parseFloat(term2);
+                result += (C_new < 0 ? C_new : `+${C_new}`);
+            }
+            return result.replace(/\+/g, '+').replace(/-/g, '-');
+        });
+        
+        const tokens = (side.match(/([+-]?\d*\.?\d*[a-z])|([+-]?\d+\.?\d*)/g) || []).filter(t => t);
+
+        tokens.forEach(token => {
+            const isVariable = token.match(/[a-z]/);
+            if (isVariable) {
+                const variable = isVariable[0];
+                let coefficient = parseFloat(token.replace(variable, ''));
+                if (isNaN(coefficient)) coefficient = (token.startsWith('-') ? -1 : 1);
+                
+                if (variable === variables[0].toLowerCase()) terms.A += coefficient;
+                else if (variable === variables[1].toLowerCase()) terms.B += coefficient;
+            } else {
+                terms.C += parseFloat(token);
+            }
+        });
+        return terms;
+    };
+
+    const canonicalizeEquation = (equationString, var1, var2) => {
+        const parts = equationString.toLowerCase().replace(/\s/g, '').split('=');
+        if (parts.length !== 2) return "error";
+
+        const variables = [var1, var2]; 
+        try {
+            const termsLHS = parseTerms(parts[0], variables);
+            const termsRHS = parseTerms(parts[1], variables);
+    
+            let A = termsLHS.A - termsRHS.A;
+            let B = termsLHS.B - termsRHS.B;
+            let C = termsRHS.C - termsLHS.C;
+
+            A = Math.round(A * 1000) / 1000;
+            B = Math.round(B * 1000) / 1000;
+            C = Math.round(C * 1000) / 1000;
+    
+            if (A < 0 || (A === 0 && B < 0)) {
+                A *= -1; B *= -1; C *= -1;
+            }
+            
+            return `${A},${B},${C}`;
+        } catch (e) {
+            console.error("Error during canonicalization:", e);
+            return "error"; 
+        }
+    };
+
+    // --- ALGEBRA GENERATORS (NEW) ---
+
+    // 1. Algebra Simple: ax + bx = c
+    const generateAlgebraSimple = () => {
+        const variable = ['x', 'y', 'a', 'b', 'n', 'p'][randInt(0, 5)];
+        const ans = randInt(-10, 10);
+        let c1, c2;
+        // Ensure non-zero simplification
+        do {
+            c1 = randInt(-9, 9);
+            c2 = randInt(-9, 9);
+        } while (c1 === 0 || c2 === 0 || c1 + c2 === 0);
+        
+        const totalCoeff = c1 + c2;
+        const totalConst = totalCoeff * ans;
+        
+        const eqStr = `${formatTerm(c1, variable, false)} ${formatTerm(c2, variable, true)} = ${totalConst}`;
+        
+        return {
+            title: 'Basic Algebra (Simple)',
+            formula: '',
+            question: `Solve for ${variable}:<div class="equation-block">${eqStr}</div>`,
+            answerX: ans, // Generic answer holder
+            variable: variable,
+            type: 'simple_combine',
+            meta: { c1, c2, totalCoeff, totalConst }
+        };
+    };
+
+    // 2. Algebra Difficult: Mixed Types
+    const generateAlgebraDifficult = () => {
+        const type = randInt(1, 4); // 1: Combine+Const, 2: Parentheses, 3: Neg Bracket, 4: Fraction
+        const variable = ['x', 'y', 'c', 'n', 'p', 'm'][randInt(0, 5)];
+        let ans, eqStr, meta = {};
+
+        if (type === 1) { 
+            // Combine + Constant: d + ax + bx = c -> -4 - 4n - 11n = 26
+            ans = randInt(-10, 10);
+            let d = randInt(-10, 10);
+            let c1 = randInt(-10, 10);
+            let c2 = randInt(-10, 10);
+            // Ensure valid
+            while(c1+c2 === 0 || c1===0 || c2===0) { c1 = randInt(-9,9); c2 = randInt(-9,9); }
+            
+            const totalCoeff = c1 + c2;
+            const rhs = d + (totalCoeff * ans);
+            
+            eqStr = `${d} ${formatTerm(c1, variable, true)} ${formatTerm(c2, variable, true)} = ${rhs}`;
+            meta = { subtype: 'combine_const', d, c1, c2, rhs, totalCoeff };
+
+        } else if (type === 2) {
+            // Parentheses: a(x - b) = x (or similar) -> 2(c-2) = 5c - 1
+            // Form: a(x + b) = cx + d
+            ans = randInt(-10, 10);
+            let a = randInt(2, 5);
+            let b = randInt(-5, 5);
+            let c = randInt(1, 6);
+            // ensure a != c to avoid parallel/no solution
+            while (a === c) c = randInt(1, 6);
+            
+            // a(ans + b) = c*ans + d  => d = a(ans+b) - c*ans
+            let d = a * (ans + b) - (c * ans);
+            
+            let b_display = b < 0 ? `- ${Math.abs(b)}` : `+ ${b}`;
+            eqStr = `${a}(${variable} ${b_display}) = ${formatTerm(c, variable, false)} ${d >= 0 ? '+ '+d : '- '+Math.abs(d)}`;
+            meta = { subtype: 'parentheses', a, b, c, d };
+
+        } else if (type === 3) {
+            // Negative Bracket: -(ax - b) = cx + d
+            ans = randInt(-10, 10);
+            let a = randInt(2, 5);
+            let b = randInt(-5, 5); // inside bracket const
+            let c = randInt(1, 5);
+            
+            // LHS: -(ax + b) = -ax - b
+            // RHS: cx + d
+            // -ax - b = cx + d => -b - d = (c+a)x => d = -b - (c+a)x
+            let d = -b - (c + a) * ans;
+            
+            let b_display = b < 0 ? `- ${Math.abs(b)}` : `+ ${b}`;
+            eqStr = `-(${a}${variable} ${b_display}) = ${formatTerm(c, variable, false)} ${d >= 0 ? '+ '+d : '- '+Math.abs(d)}`;
+            meta = { subtype: 'neg_bracket', a, b, c, d };
+
+        } else {
+            // Fraction: ax + x/k = c OR m + m/7 = 8
+            // Form: a*x + x/k = c
+            // We want integer answer.
+            let k = randInt(2, 8); // denominator
+            ans = randInt(1, 5) * k; // answer is multiple of k
+            let a = randInt(1, 3);
+            
+            // LHS = a*ans + ans/k
+            let lhs_val = a * ans + (ans / k);
+            
+            // Display: 2p - p/4 = 14 or m + m/7 = 8
+            let op = '+';
+            if (randInt(0, 1) === 1) { 
+                // Subtraction case: ax - x/k
+                op = '-';
+                lhs_val = a * ans - (ans / k);
+            }
+            
+            eqStr = `${formatTerm(a, variable, false)} ${op} ${variable}/${k} = ${lhs_val}`;
+            meta = { subtype: 'fraction', a, k, op, lhs_val };
+        }
+
+        return {
+            title: 'Basic Algebra (Difficult)',
+            formula: '',
+            question: `Solve for ${variable}:<div class="equation-block">${eqStr}</div>`,
+            answerX: ans,
+            variable: variable,
+            type: 'algebra_difficult',
+            meta: meta
+        };
+    };
+
+    // --- ALGEBRA EXPLANATIONS ---
+    const generateAlgebraExplanation = (q) => {
+        const v = q.variable;
+        const ans = q.answerX;
+        let explanation = `<strong>Step 0: Analyze the Equation</strong><br>
+        <div class="equation-block">${q.question.replace(/<[^>]*>/g, '').replace('Solve for '+v+':', '')}</div><br>`;
+
+        if (q.type === 'simple_combine') {
+            const { c1, c2, totalCoeff, totalConst } = q.meta;
+            explanation += `<strong>Step 1: Combine Like Terms</strong><br>
+            Combine ${c1}${v} and ${c2 > 0 ? '+' : ''}${c2}${v}:<br>
+            <div class="equation-block">
+            (${c1} ${c2 > 0 ? '+' : ''}${c2})${v} = ${totalConst}<br>
+            ${totalCoeff}${v} = ${totalConst}
+            </div><br>
+            <strong>Step 2: Solve</strong><br>
+            Divide by ${totalCoeff}:
+            <div class="equation-block">
+            ${v} = ${totalConst} / ${totalCoeff}<br>
+            ${v} = ${ans}
+            </div>`;
+        } 
+        else if (q.type === 'algebra_difficult') {
+            const m = q.meta;
+            if (m.subtype === 'combine_const') {
+                explanation += `<strong>Step 1: Combine Like Terms</strong><br>
+                Combine the ${v} terms (${m.c1}${v} and ${m.c2}${v}):<br>
+                <div class="equation-block">${m.d} ${m.totalCoeff > 0 ? '+' : ''}${m.totalCoeff}${v} = ${m.rhs}</div><br>
+                <strong>Step 2: Move Constant</strong><br>
+                Subtract ${m.d} from both sides:<br>
+                <div class="equation-block">
+                ${m.totalCoeff}${v} = ${m.rhs} - ${m.d}<br>
+                ${m.totalCoeff}${v} = ${m.rhs - m.d}
+                </div><br>
+                <strong>Step 3: Solve</strong><br>
+                <div class="equation-block">${v} = ${(m.rhs - m.d)} / ${m.totalCoeff} = ${ans}</div>`;
+            } 
+            else if (m.subtype === 'parentheses') {
+                // a(x + b) = cx + d
+                let dist = m.a * m.b;
+                let dist_str = dist >= 0 ? `+ ${dist}` : `- ${Math.abs(dist)}`;
+                explanation += `<strong>Step 1: Expand Brackets</strong><br>
+                Multiply ${m.a} into the parentheses:<br>
+                <div class="equation-block">${m.a}${v} ${dist_str} = ${m.c}${v} ${m.d >= 0 ? '+ '+m.d : m.d}</div><br>
+                <strong>Step 2: Collect Variables</strong><br>
+                Subtract ${m.c}${v} from both sides:<br>
+                <div class="equation-block">${m.a - m.c}${v} ${dist_str} = ${m.d}</div><br>
+                <strong>Step 3: Solve</strong><br>
+                Move constant ${dist} to the right:<br>
+                <div class="equation-block">
+                ${m.a - m.c}${v} = ${m.d} - (${dist})<br>
+                ${m.a - m.c}${v} = ${m.d - dist}<br>
+                ${v} = ${ans}
+                </div>`;
+            }
+            else if (m.subtype === 'neg_bracket') {
+                // -(ax + b) = cx + d
+                let dist_b = -1 * m.b;
+                let dist_b_str = dist_b >= 0 ? `+ ${dist_b}` : `- ${Math.abs(dist_b)}`;
+                explanation += `<strong>Step 1: Expand Negative Sign</strong><br>
+                Distribute the negative sign:<br>
+                <div class="equation-block">-${m.a}${v} ${dist_b_str} = ${m.c}${v} ${m.d >= 0 ? '+ '+m.d : m.d}</div><br>
+                <strong>Step 2: Collect Variables</strong><br>
+                Move variables to one side (e.g., add ${m.a}${v}):<br>
+                <div class="equation-block">
+                ${dist_b} = (${m.c} + ${m.a})${v} ${m.d >= 0 ? '+ '+m.d : m.d}<br>
+                ${dist_b} = ${m.c + m.a}${v} ${m.d >= 0 ? '+ '+m.d : m.d}
+                </div><br>
+                <strong>Step 3: Solve</strong><br>
+                <div class="equation-block">
+                ${dist_b} - (${m.d}) = ${m.c + m.a}${v}<br>
+                ${dist_b - m.d} = ${m.c + m.a}${v}<br>
+                ${v} = ${ans}
+                </div>`;
+            }
+            else if (m.subtype === 'fraction') {
+                // ax +/- x/k = c
+                let opText = m.op === '+' ? 'Add' : 'Subtract';
+                explanation += `<strong>Step 1: Clear Fraction</strong><br>
+                Multiply the entire equation by ${m.k}:<br>
+                <div class="equation-block">
+                ${m.k}(${m.a}${v}) ${m.op} ${v} = ${m.k}(${m.lhs_val})<br>
+                ${m.a * m.k}${v} ${m.op} ${v} = ${m.lhs_val * m.k}
+                </div><br>
+                <strong>Step 2: Combine Terms</strong><br>
+                <div class="equation-block">
+                (${m.a * m.k} ${m.op} 1)${v} = ${m.lhs_val * m.k}<br>
+                ${m.op === '+' ? m.a*m.k + 1 : m.a*m.k - 1}${v} = ${m.lhs_val * m.k}
+                </div><br>
+                <strong>Step 3: Solve</strong><br>
+                <div class="equation-block">${v} = ${ans}</div>`;
+            }
+        }
+        return explanation;
+    }
+
+
+    // --- SIMULTANEOUS GENERATORS (Existing - kept as is) ---
+    // (Simultaneous generators code block omitted for brevity but included in compilation)
+    // ... [Previous `generateSolveEquations_Simple`, `generateSolveEquations_MixedFraction`, formulation generators] ...
+    
+    // Placeholder to reconnect the omitted simultaneous logic
+    const generateSolveEquations_Simple_Sim = () => { 
+        const x = randInt(1, 4) * (Math.random() < 0.5 ? 1 : -1); const y = randInt(1, 4) * (Math.random() < 0.5 ? 1 : -1); 
+        let a1, b1, a2, b2; do { a1 = randInt(1, 2) * (Math.random() < 0.5 ? 1 : -1); b1 = randInt(1, 2) * (Math.random() < 0.5 ? 1 : -1); a2 = randInt(1, 5) * (Math.random() < 0.5 ? 1 : -1); b2 = randInt(1, 5) * (Math.random() < 0.5 ? 1 : -1); } while (a1 * b2 === a2 * b1);
+        const c1 = a1 * x + b1 * y; const c2 = a2 * x + b2 * y;
+        const eq1Str = formatCoefficient(a1, 'x') + formatTerm(b1, 'y') + ' = ' + c1; const eq2Str = formatCoefficient(a2, 'x') + formatTerm(b2, 'y') + ' = ' + c2;
+        return { title: 'Solve Equations (Simple)', formula: '', question: `Solve for x and y:<div class="equation-block">${eq1Str} --- (1)<br>${eq2Str} --- (2)</div>`, answerX: x, answerY: y, eq1: {a: a1, b: b1, c: c1, str: eq1Str}, eq2: {a: a2, b: b2, c: c2, str: eq2Str} };
+    };
+    const generateSolveEquations_MixedFraction_Sim = () => { 
+        const x = randInt(1, 5) * (Math.random() < 0.5 ? 1 : -1); const y = randInt(1, 5) * (Math.random() < 0.5 ? 1 : -1); 
+        const fractionPool = ['1/2', '1/3', '2/3', '1/4', '3/4', '1/5', '2/5']; const fracStr = fractionPool[randInt(0, fractionPool.length - 1)]; const fracVal = eval(fracStr); const fracPosition = randInt(0, 3); 
+        let a1, b1, a2, b2; let a1Num, b1Num, a2Num, b2Num; let c1, c2;
+        // Simplified loop for brevity
+        do { a1Num = randInt(1,4); b1Num = randInt(1,4); a2Num = randInt(1,4); b2Num = randInt(1,4); if(fracPosition===0) a1Num=fracVal; else if(fracPosition===1) b1Num=fracVal; else if(fracPosition===2) a2Num=fracVal; else b2Num=fracVal; if(Math.abs(a1Num*b2Num-a2Num*b1Num)>0.001) break; } while(true);
+        c1 = a1Num*x + b1Num*y; c2 = a2Num*x + b2Num*y;
+        a1 = fracPosition===0 ? fracStr : a1Num; b1 = fracPosition===1 ? fracStr : b1Num; a2 = fracPosition===2 ? fracStr : a2Num; b2 = fracPosition===3 ? fracStr : b2Num;
+        const eq1Str = formatCoefficient(a1, 'x') + formatTerm(b1, 'y') + ' = ' + toFractionString(c1); const eq2Str = formatCoefficient(a2, 'x') + formatTerm(b2, 'y') + ' = ' + toFractionString(c2);
+        return { title: 'Solve Equations (Difficult - Fraction)', formula: '', question: `Solve:<div class="equation-block">${eq1Str} --- (1)<br>${eq2Str} --- (2)</div>`, answerX: x, answerY: y, eq1: {a: a1Num, b: b1Num, c: c1, str: eq1Str}, eq2: {a: a2Num, b: b2Num, c: c2, str: eq2Str}, fracPosition: fracPosition };
+    };
+    const generateLinearCombinationProblem_Simple = () => { 
+        const scenario = [{ item1: 'pens', item2: 'notebooks', context: (a1, b1, c1, a2, b2, c2) => `A student buys ${a1} ${a1 > 1 ? 'pens' : 'pen'} and ${b1} ${b1 > 1 ? 'notebooks' : 'notebook'} for $${c1}. Later, they buy ${a2} ${a2 > 1 ? 'pens' : 'pen'} and ${b2} ${b2 > 1 ? 'notebooks' : 'notebook'} for $${c2}.` }][0];
+        const a1 = randInt(2, 6); const b1 = randInt(1, 5); const c1 = randInt(15, 45); 
+        const a2 = randInt(2, 6); const b2 = randInt(1, 5); const c2 = randInt(15, 45); 
+        const problemContext = scenario.context(a1, b1, c1, a2, b2, c2);
+        const instruction = `Let x be the cost of one ${scenario.item1.replace(/s$/, '')} and y be the cost of one ${scenario.item2.replace(/s$/, '')}.<br><br>Write down the two simultaneous equations that represent this situation.`;
+        return { title: 'Formulate Equations (Simple)', formula: '', question: problemContext + '<br><br>' + instruction, var1: 'x', var2: 'y', answerEq1: `${a1}x + ${b1}y = ${c1}`, answerEq2: `${a2}x + ${b2}y = ${c2}`, generatorType: 'linear_combination' };
+    };
+    const generatePointsSystemProblem_Simple = () => {
+        const P_win = 3; const P_loss = 1; const G = randInt(10, 25); 
+        let x, y; do { x = randInt(5, G - 1); y = G - x; } while ((P_win - P_loss) === 0 || ((P_win * x + P_loss * y) - P_loss * G) % (P_win - P_loss) !== 0);
+        const P = P_win * x + P_loss * y; const teamName = ['The Stars', 'The Rockets'][randInt(0, 1)];
+        const problem = `${teamName} played a total of ${G} games. Wins (x) get ${P_win} points, losses (y) get ${P_loss} point. They earned ${P} points in total.<br><br>Write down the two simultaneous equations that represent this situation.`;
+        return { title: 'Formulate Equations (Simple)', formula: '', question: problem, var1: 'x', var2: 'y', answerEq1: `x + y = ${G}`, answerEq2: `${P_win}x + ${P_loss}y = ${P}`, generatorType: 'points_total' };
+    };
+    const simpleFormulationGenerators = [generateLinearCombinationProblem_Simple, generatePointsSystemProblem_Simple];
+
+    // --- MASTER GENERATOR CONTROLLER ---
+    const generators = {
+        solve_equations: (difficulty) => difficulty === 'simple' ? generateSolveEquations_Simple_Sim() : generateSolveEquations_MixedFraction_Sim(),
+        formulate_equations: (difficulty) => simpleFormulationGenerators[randInt(0, simpleFormulationGenerators.length - 1)](),
+        solve_algebra: (difficulty) => difficulty === 'simple' ? generateAlgebraSimple() : generateAlgebraDifficult()
+    };
+
+    // --- Explanation Router ---
+    const generateSubstitutionExplanation = (q) => { 
+        // ... (Existing Simultaneous Explanation Code - Omitted to save space, unchanged) ...
+        // Re-implementing the function body that was condensed
+        const x_ans = q.answerX; const y_ans = q.answerY; const eq1 = q.eq1; const eq2 = q.eq2;
+        let explanation = `<strong>Step 0: Copy the question</strong><br><div class="equation-block"><div class="system-equations">${eq1.str} --- (1)<br>${eq2.str} --- (2)</div></div><br>`;
+        let targetEq = null, otherEq = null, targetEqNum = 0, otherEqNum = 0; let subjectVar = '', otherVar = '';
+        if (q.title.includes('Mixed Fraction')) {
+            if (q.fracPosition === 0 || q.fracPosition === 1) { targetEq = eq1; targetEqNum = 1; otherEq = eq2; otherEqNum = 2; } else { targetEq = eq2; targetEqNum = 2; otherEq = eq1; otherEqNum = 1; }
+            subjectVar = (q.fracPosition === 0 || q.fracPosition === 2) ? 'x' : 'y'; otherVar = (subjectVar === 'x') ? 'y' : 'x';
+        } else {
+            if (Math.abs(eq1.a) === 1) { targetEq = eq1; targetEqNum = 1; otherEq = eq2; otherEqNum = 2; subjectVar = 'x'; otherVar = 'y'; } else if (Math.abs(eq1.b) === 1) { targetEq = eq1; targetEqNum = 1; otherEq = eq2; otherEqNum = 2; subjectVar = 'y'; otherVar = 'x'; } else if (Math.abs(eq2.a) === 1) { targetEq = eq2; targetEqNum = 2; otherEq = eq1; otherEqNum = 1; subjectVar = 'x'; otherVar = 'y'; } else { targetEq = eq2; targetEqNum = 2; otherEq = eq1; otherEqNum = 1; subjectVar = 'y'; otherVar = 'x'; }
+        }
+        const targetA = (subjectVar === 'x') ? targetEq.a : targetEq.b; const targetB = (subjectVar === 'x') ? targetEq.b : targetEq.a; const targetC = targetEq.c;
+        const slope = -targetB / targetA; const intercept = targetC / targetA; const slopeStr = toFractionString(slope); const interceptStr = toFractionString(intercept);
+        let moveTerm = formatTerm(Math.abs(targetB), otherVar, false); if (moveTerm && !moveTerm.includes('/')) { moveTerm = formatTerm(toFractionString(Math.abs(targetB)), otherVar, false); }
+        let sign = targetB > 0 ? '-' : '+'; let step1_inter = `${formatCoefficient(toFractionString(targetA), subjectVar)} = ${toFractionString(targetC)} ${sign} ${moveTerm}`;
+        let isoStr = ''; if (Math.abs(intercept) < 0.001) isoStr = `${subjectVar} = ${formatTerm(slopeStr, otherVar, false)}`; else isoStr = `${subjectVar} = ${interceptStr} ${formatTerm(slopeStr, otherVar, true)}`;
+        explanation += `<strong>Step 1: Make ${subjectVar} the subject</strong><br>From (${targetEqNum}),<div class="equation-block">${targetEq.str}<br>${step1_inter}<br>${isoStr} --- (3)</div><br>`;
+        const subA = (subjectVar === 'x') ? otherEq.a : otherEq.b; const subB = (subjectVar === 'x') ? otherEq.b : otherEq.a; const subC = otherEq.c; const subExpression = isoStr.split('=')[1].trim();
+        const expandedConst = subA * intercept; const expandedVarCoeff = subA * slope; const finalVarCoeff = expandedVarCoeff + subB; const finalConstRight = subC - expandedConst;
+        let subAStr = toFractionString(subA); let subBStr = toFractionString(subB); let subCStr = toFractionString(subC); let expConstStr = toFractionString(expandedConst); let expVarCoeffStr = toFractionString(expandedVarCoeff); let finalVarCoeffStr = toFractionString(finalVarCoeff); let finalConstRightStr = toFractionString(finalConstRight);
+        let line1 = `${formatCoefficient(subAStr, '')}(${subExpression}) ${formatTerm(subBStr, otherVar)} = ${subCStr}`;
+        let line2_term1 = (Math.abs(expandedConst) < 0.001) ? '' : expConstStr; let line2_term2 = formatTerm(expVarCoeffStr, otherVar, line2_term1 !== ''); let line2 = `${line2_term1} ${line2_term2} ${formatTerm(subBStr, otherVar, true)} = ${subCStr}`.trim().replace(/^\+\s*/, '');
+        let line3 = `${formatCoefficient(finalVarCoeffStr, otherVar)} = ${finalConstRightStr}`; let solvedOtherValStr = toFractionString(finalConstRight / finalVarCoeff);
+        explanation += `<strong>Step 2: Substitution to the other equation</strong><br>Substitute (3) into (${otherEqNum})<div class="equation-block">${line1}<br>${line2}<br>${line3}<br>${otherVar} = ${solvedOtherValStr}</div><br>`;
+        const solvedOtherVal = finalConstRight / finalVarCoeff; const finalMainVal = intercept + slope * solvedOtherVal; const finalMainValStr = toFractionString(finalMainVal);
+        let subEq3 = ''; if (Math.abs(intercept) < 0.001) { subEq3 = `${subjectVar} = ${formatCoefficient(slopeStr, '')}(${solvedOtherValStr})`; } else { subEq3 = `${subjectVar} = ${interceptStr} ${formatTerm(slopeStr, '', true)}(${solvedOtherValStr})`; }
+        explanation += `<strong>Step 3: Substitute your answer to any equation</strong><br>Substitute ${otherVar} = ${solvedOtherValStr} into (3)<div class="equation-block">${subEq3}<br>${subjectVar} = ${finalMainValStr}</div><br>`;
+        explanation += `<strong>Step 4: Draw the conclusion</strong><br>The solution is x = ${x_ans}, y = ${y_ans}.`;
+        return explanation;
+    };
+    const generateFormulationExplanation = (q) => {
+        const eq1Desc = q.generatorType === 'linear_combination' ? "This equation summarizes the <strong>First Transaction/Event</strong>." : "This equation summarizes the <strong>Total Games</strong>.";
+        const eq2Desc = q.generatorType === 'linear_combination' ? "This equation summarizes the <strong>Second Transaction/Event</strong>." : "This equation calculates the <strong>Total Points</strong>.";
+        return `<strong>1. Define Variables:</strong> <strong>${q.var1}</strong> and <strong>${q.var2}</strong> are the unknowns.<br><strong>2. Equation 1 Formulation:</strong><br>${eq1Desc}<div class="equation-block">Eq 1: ${q.answerEq1}</div><strong>3. Equation 2 Formulation:</strong><br>${eq2Desc}<div class="equation-block">Eq 2: ${q.answerEq2}</div><br><strong>Conclusion:</strong><br>Always ensure your two equations accurately reflect the numerical relationships described in the word problem.`;
+    };
+
+    const getExplanation = () => {
+        if (currentTopic === 'solve_algebra') return generateAlgebraExplanation(currentQuestion);
+        if (currentTopic === 'formulate_equations') return generateFormulationExplanation(currentQuestion);
+        return generateSubstitutionExplanation(currentQuestion); // Simultaneous
+    };
+
+    // --- Core UI Logic ---
+    const renderScreen = (targetId) => {
+        [mainMenu, topicSelector, difficultySelector, quizCard, resultsCard].forEach(s => s.classList.add('hidden'));
+        document.getElementById(targetId).classList.remove('hidden', 'opacity-0');
+        if (targetId === 'quizCard' || targetId === 'resultsCard') document.getElementById(targetId).classList.remove('scale-95');
+    };
+
+    // NAVIGATION
+    btnSimultaneous.addEventListener('click', () => {
+        currentSubject = 'Simultaneous Equations';
+        mainTitle.textContent = "Simultaneous Equations";
+        headerSubtitle.textContent = "Choose a topic.";
+        renderScreen('topicSelector');
+    });
+
+    btnBasicAlgebra.addEventListener('click', () => {
+        currentSubject = 'Basic Algebra';
+        currentTopic = 'solve_algebra'; // Virtual topic
+        mainTitle.textContent = "Basic Algebra";
+        headerSubtitle.textContent = "Choose a difficulty.";
+        
+        // Hide Cancel button since we came from main menu
+        diffCancelBtn.textContent = "Back to Menu";
+        
+        // Ensure difficult button is visible
+        difficultButton.classList.remove('hidden');
+
+        renderScreen('difficultySelector');
+    });
+
+    topicButtons.forEach(btn => btn.addEventListener('click', () => {
+        topicButtons.forEach(b => b.classList.remove('active')); btn.classList.add('active');
+        currentTopic = btn.dataset.topic;
+        if (currentTopic === 'formulate_equations') { 
+            difficultButton.classList.add('hidden'); currentDifficulty = 'simple'; startNewSession(); 
+        } else { 
+            difficultButton.classList.remove('hidden'); 
+            diffCancelBtn.textContent = "Cancel"; 
+            renderScreen('difficultySelector'); 
+        }
+    }));
+
+    difficultyButtons.forEach(btn => btn.addEventListener('click', () => {
+        currentDifficulty = btn.dataset.difficulty;
+        startNewSession();
+    }));
+
+    backToMenuBtn.addEventListener('click', resetToMainMenu);
+    diffCancelBtn.addEventListener('click', () => {
+        if (currentSubject === 'Basic Algebra') resetToMainMenu();
+        else renderScreen('topicSelector');
+    });
+    quizBackToMenu.addEventListener('click', () => showModal("Exit to Menu?", resetToMainMenu));
+    imDoneButton.addEventListener('click', () => showModal("Finish now?", endQuizSession));
+    restartButton.addEventListener('click', resetToMainMenu);
+
+    function resetToMainMenu() {
+        currentSubject = null; currentTopic = null; currentDifficulty = null;
+        mainTitle.textContent = "Math Quizzes"; headerSubtitle.textContent = "Select a subject.";
+        renderScreen('mainMenu');
+    }
+
+    const startNewSession = () => { 
+        sessionActive = true; score = 0; totalQuestions = 0; 
+        renderScreen('quizCard'); loadQuestion(); 
+    };
+
+    const loadQuestion = () => {
+        if (!sessionActive) return; 
+        currentQuestion = generators[currentTopic](currentDifficulty);
+        currentStep = 'step1'; 
+        
+        document.getElementById('quizTitle').textContent = `${currentSubject} - ${currentDifficulty.charAt(0).toUpperCase() + currentDifficulty.slice(1)}`;
+        document.getElementById('formulaDisplay').innerHTML = currentQuestion.formula;
+        document.getElementById('resultMessage').textContent = '';
+        answerInput.value = '';
+        document.getElementById('solutionDisplay').classList.add('hidden');
+        nextButton.classList.add('hidden');
+        document.getElementById('inputContainer').classList.remove('hidden');
+        
+        currentQuestionNumber.textContent = totalQuestions + 1;
+        scoreTracker.textContent = score;
+        difficultyTracker.textContent = currentDifficulty;
+        subjectTracker.textContent = currentSubject; // Show subject name
+
+        // Prompt Logic
+        let prompt = '';
+        if (currentTopic === 'solve_equations') {
+            answerInput.type = 'number'; answerInput.step = '1'; prompt = "(STEP 1/2) Enter x.";
+        } else if (currentTopic === 'solve_algebra') {
+            answerInput.type = 'number'; answerInput.step = '1'; prompt = `Enter value for ${currentQuestion.variable}.`;
+        } else {
+            answerInput.type = 'text'; answerInput.removeAttribute('step'); prompt = "Enter Equation 1.";
+        }
+        
+        document.getElementById('questionText').innerHTML = currentQuestion.question + `<p class="mt-4 text-center text-lg font-bold text-blue-700">${prompt}</p>`;
+    };
+
+    const checkAnswer = () => {
+        if (!currentQuestion || !sessionActive) return;
+        const val = answerInput.value.trim(); if (!val) return;
+
+        if (currentTopic === 'solve_algebra') {
+            const numVal = parseFloat(val);
+            if (Math.abs(numVal - currentQuestion.answerX) < 0.01) {
+                score++; displaySolutionAndPause(true);
+            } else {
+                displaySolutionAndPause(false);
+            }
+        } 
+        else if (currentTopic === 'solve_equations') {
+            // ... (Existing Simultaneous logic) ...
+            const numVal = parseFloat(val);
+            if (currentStep === 'step1') {
+                if (Math.abs(numVal - currentQuestion.answerX) < 0.01) {
+                    currentStep = 'step2';
+                    document.getElementById('questionText').innerHTML = currentQuestion.question + '<p class="mt-4 text-center text-lg font-bold text-blue-700">(STEP 2/2) Enter y.</p>';
+                    answerInput.value = '';
+                    document.getElementById('resultMessage').textContent = "Correct X!";
+                } else displaySolutionAndPause(false);
+            } else {
+                if (Math.abs(numVal - currentQuestion.answerY) < 0.01) { score++; displaySolutionAndPause(true); } else displaySolutionAndPause(false);
+            }
+        } 
+        else {
+            // ... (Existing Formulation logic) ...
+            const can = canonicalizeEquation(val, currentQuestion.var1, currentQuestion.var2);
+            const ans1 = canonicalizeEquation(currentQuestion.answerEq1, currentQuestion.var1, currentQuestion.var2);
+            const ans2 = canonicalizeEquation(currentQuestion.answerEq2, currentQuestion.var1, currentQuestion.var2);
+            if (can === 'error') return;
+            if (currentStep === 'step1') {
+                if (can === ans1 || can === ans2) {
+                    currentStep = 'step2';
+                    if (can === ans2) [currentQuestion.answerEq1, currentQuestion.answerEq2] = [currentQuestion.answerEq2, currentQuestion.answerEq1];
+                    document.getElementById('questionText').innerHTML = currentQuestion.question + '<p class="mt-4 text-center text-lg font-bold text-blue-700">(STEP 2/2) Enter Eq 2.</p>';
+                    answerInput.value = '';
+                    document.getElementById('resultMessage').textContent = "Correct Eq 1!";
+                } else displaySolutionAndPause(false);
+            } else {
+                if (can === canonicalizeEquation(currentQuestion.answerEq2, currentQuestion.var1, currentQuestion.var2)) { score++; displaySolutionAndPause(true); } else displaySolutionAndPause(false);
+            }
+        }
+        scoreTracker.textContent = score;
+    };
+
+    function displaySolutionAndPause(isFinalCorrect) {
+        document.getElementById('inputContainer').classList.add('hidden');
+        const msg = document.getElementById('resultMessage'); const solBox = document.getElementById('solutionDisplay');
+        if (isFinalCorrect) { msg.textContent = "Correct!"; msg.className = "text-center font-semibold h-6 text-green-600"; solBox.classList.add('bg-green-100'); solBox.classList.remove('bg-red-100'); }
+        else { msg.textContent = "Incorrect."; msg.className = "text-center font-semibold h-6 text-red-600"; solBox.classList.add('bg-red-100'); solBox.classList.remove('bg-green-100'); }
+        
+        let explanation = getExplanation();
+        document.getElementById('solutionTitle').textContent = "Solution:";
+        document.getElementById('solutionText').innerHTML = explanation;
+        solBox.classList.remove('hidden');
+        nextButton.classList.remove('hidden');
+    }
+
+    function endQuizSession() {
+        sessionActive = false;
+        document.getElementById('finalScore').textContent = score;
+        document.getElementById('finalTotal').textContent = MAX_QUESTIONS;
+        document.getElementById('finalDifficulty').textContent = currentDifficulty;
+        document.getElementById('finalTopic').textContent = currentSubject;
+        renderScreen('resultsCard');
+    }
+
+    submitButton.addEventListener('click', checkAnswer);
+    answerInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkAnswer(); });
+    nextButton.addEventListener('click', () => { totalQuestions++; if (totalQuestions >= MAX_QUESTIONS) endQuizSession(); else loadQuestion(); });
+
+    // --- Init ---
+    maxQuestionsTracker.textContent = MAX_QUESTIONS;
+    renderScreen('mainMenu'); 
+    
+    // --- Re-attach Modal Logic ---
+    function showModal(msg, action) {
+        modalMessage.textContent = msg; pendingModalAction = action; customModal.classList.remove('hidden');
+    }
+    function hideModal() { customModal.classList.add('hidden'); pendingModalAction = null; }
+    modalYesBtn.addEventListener('click', () => { if (pendingModalAction) pendingModalAction(); hideModal(); });
+    modalNoBtn.addEventListener('click', hideModal);
+
+</script>
+</body>
+</html>
