@@ -94,7 +94,7 @@
         </div>
         <div class="bg-white/90 backdrop-blur-sm px-3 py-1 mt-1 rounded-md shadow-sm border border-gray-100">
             <p class="text-[10px] text-gray-500 text-right leading-tight">
-                Score 5+ on <strong>Simultaneous Eq</strong><br>to build your streak!
+                Score 5+ on <strong>Solve Equations</strong><br>(Simultaneous) for streaks!
             </p>
         </div>
     </div>
@@ -137,8 +137,9 @@
         </div>
         <h2 class="text-3xl font-bold text-gray-800 mb-6">Choose Topic</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
-            <button data-topic="solve_equations" class="selection-button bg-white border-2 border-blue-100 text-blue-700 font-bold py-6 px-6 rounded-2xl shadow-sm hover:border-blue-500 hover:shadow-md w-full text-lg">
+            <button data-topic="solve_equations" class="selection-button bg-white border-2 border-blue-100 text-blue-700 font-bold py-6 px-6 rounded-2xl shadow-sm hover:border-blue-500 hover:shadow-md w-full text-lg relative overflow-hidden group">
                 Solve Equations
+                <div class="absolute top-2 right-2 bg-orange-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm uppercase tracking-wider">Streak Mode</div>
             </button>
             <button data-topic="formulate_equations" class="selection-button bg-white border-2 border-purple-100 text-purple-700 font-bold py-6 px-6 rounded-2xl shadow-sm hover:border-purple-500 hover:shadow-md w-full text-lg">
                 Formulate Equations <span class="block text-xs font-normal mt-1 text-gray-500">(Word Problems)</span>
@@ -240,6 +241,11 @@
             <span class="text-xl">🔥</span> 
             <span class="font-bold">Daily Streak Increased!</span>
         </div>
+
+        <!-- Added Topic/Difficulty Info -->
+        <p class="text-lg text-gray-600 mb-2">
+            Completed: <span id="finalDifficulty" class="font-bold capitalize text-indigo-600"></span> <span id="finalTopic" class="font-bold text-indigo-600"></span>
+        </p>
 
         <p class="text-lg text-gray-500 mb-2">Final Score</p>
         <div class="text-7xl font-black text-indigo-600 mb-2 tracking-tighter">
