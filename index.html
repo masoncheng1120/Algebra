@@ -7,191 +7,263 @@
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f7fafc;
+            background-color: #f3f4f6;
         }
         .container {
             min-height: 100vh;
         }
+        /* Button Styling */
         .selection-button {
-            transition: all 0.2s ease;
+            transition: all 0.2s ease-in-out;
+            border: 1px solid transparent;
         }
         .selection-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .selection-button:active {
+            transform: translateY(-1px);
         }
         .selection-button.active {
-            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.5), 0 4px 6px -4px rgba(37, 99, 235, 0.5);
-            border-color: #2563eb;
-            background-color: #1e40af;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.3);
+            border-color: #4f46e5;
         }
-        #formulaDisplay {
-            min-height: 2.5rem; 
-        }
+
+        /* Improved Equation Display */
         .equation-block {
-            background-color: #e5e7eb;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            font-family: monospace;
-            white-space: pre-wrap;
-            margin-top: 0.75rem;
-            margin-bottom: 0.75rem;
-            max-width: 100%;
-            width: fit-content; 
-            margin-left: auto;
-            margin-right: auto;
-            text-align: left;
-            font-size: 1rem;
-            line-height: 1.8;
-        }
-        #solutionText {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            padding: 1.5rem 2rem;
+            border-radius: 1rem;
+            font-family: "Times New Roman", Times, serif; /* Math-like font */
+            font-size: 1.35rem;
             line-height: 1.6;
+            color: #1f2937;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            max-width: 100%;
+            width: fit-content;
+            margin: 1.5rem auto;
             text-align: left;
         }
-        .system-equations {
+        
+        /* Math Variable Styling */
+        .math-var {
+            font-style: italic;
+            font-family: "Times New Roman", Times, serif;
+        }
+
+        /* Vertical Fraction Styling */
+        .fraction {
             display: inline-block;
             vertical-align: middle;
+            text-align: center;
+            font-size: 0.85em;
+            margin: 0 0.2em;
+        }
+        .fraction > span {
+            display: block;
+            padding: 0 0.1em;
+        }
+        .fraction span.numerator {
+            border-bottom: 1px solid #1f2937;
+            padding-bottom: 1px;
+        }
+        .fraction span.denominator {
+            border-top: 1px solid transparent;
+            padding-top: 1px;
+        }
+        
+        #solutionText {
+            line-height: 1.7;
             text-align: left;
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 relative text-gray-800">
 
 <div class="container flex flex-col items-center p-4 sm:p-8">
     
+    <!-- Streak Counter (Top Right) -->
+    <div id="streakContainer" class="absolute top-4 right-4 flex flex-col items-end z-10 pointer-events-none">
+        <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-lg border border-orange-100 ring-1 ring-orange-50">
+            <span class="text-2xl animate-pulse">🔥</span>
+            <span id="streakCount" class="text-xl font-bold text-orange-600">0</span>
+        </div>
+        <div class="bg-white/90 backdrop-blur-sm px-3 py-1 mt-1 rounded-md shadow-sm border border-gray-100">
+            <p class="text-[10px] text-gray-500 text-right leading-tight">
+                Score 5+ on <strong>Simultaneous Eq</strong><br>to build your streak!
+            </p>
+        </div>
+    </div>
+
     <!-- Dynamic Header -->
-    <header class="w-full max-w-2xl text-center mb-8">
-        <h1 id="mainTitle" class="text-4xl font-bold text-gray-800 mb-2">Math Quizzes</h1>
-        <p id="headerSubtitle" class="text-gray-600">Select a subject to begin.</p>
+    <header class="w-full max-w-2xl text-center mb-10 mt-6">
+        <h1 id="mainTitle" class="text-5xl font-extrabold text-gray-900 mb-3 tracking-tight">Math Quizzes</h1>
+        <p id="headerSubtitle" class="text-lg text-gray-600 font-medium">Enter your name and select a subject to begin.</p>
     </header>
     
     <!-- Screen 0: Main Menu (Subject Selection) -->
-    <div id="mainMenu" class="w-full max-w-2xl flex flex-col items-center">
-        <div class="flex flex-wrap justify-center gap-4 w-full">
-            <button id="btnSimultaneous" class="selection-button bg-indigo-600 text-white font-bold py-6 px-10 rounded-xl shadow-lg hover:bg-indigo-700 w-full sm:w-5/12 text-xl flex flex-col items-center justify-center gap-2">
-                <span>Simultaneous Equations</span>
-                <span class="text-sm font-normal opacity-75">{ x + y = 5, 2x - y = 1 }</span>
+    <div id="mainMenu" class="w-full max-w-2xl flex flex-col items-center animate-fade-in">
+        
+        <!-- Name Input Section -->
+        <div class="w-full max-w-md mb-8 bg-white p-6 rounded-2xl shadow-lg border border-gray-100 transition-shadow hover:shadow-xl">
+            <label for="studentName" class="block text-gray-700 text-sm font-bold mb-3 uppercase tracking-wide">Student Name</label>
+            <input type="text" id="studentName" placeholder="Type your full name..." class="w-full py-3 px-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
+            <p class="text-xs text-gray-400 mt-2 text-right">* Required for result verification</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
+            <button id="btnSimultaneous" class="selection-button bg-gradient-to-br from-indigo-600 to-indigo-700 text-white font-bold py-8 px-6 rounded-2xl shadow-lg w-full flex flex-col items-center justify-center gap-3 relative overflow-hidden group">
+                <span class="text-xl tracking-wide group-hover:scale-105 transition-transform">Simultaneous Equations</span>
+                <span class="text-sm font-normal opacity-80 font-serif italic">{ x + y = 5, 2x - y = 1 }</span>
+                <div class="absolute top-3 right-3 bg-white/20 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-full font-bold shadow-sm">STREAK MODE</div>
             </button>
-            <button id="btnBasicAlgebra" class="selection-button bg-teal-600 text-white font-bold py-6 px-10 rounded-xl shadow-lg hover:bg-teal-700 w-full sm:w-5/12 text-xl flex flex-col items-center justify-center gap-2">
-                <span>Basic Algebra</span>
-                <span class="text-sm font-normal opacity-75">3x - 5 = x + 7</span>
+            <button id="btnBasicAlgebra" class="selection-button bg-gradient-to-br from-teal-500 to-teal-600 text-white font-bold py-8 px-6 rounded-2xl shadow-lg w-full flex flex-col items-center justify-center gap-3 relative overflow-hidden group">
+                <span class="text-xl tracking-wide group-hover:scale-105 transition-transform">Basic Algebra</span>
+                <span class="text-sm font-normal opacity-80 font-serif italic">3x - 5 = x + 7</span>
             </button>
         </div>
     </div>
 
     <!-- Screen 1: Topic Selector (Simultaneous Only) -->
     <div id="topicSelector" class="hidden w-full max-w-2xl flex flex-col items-center">
-        <div class="w-full flex justify-start mb-4">
-            <button id="backToMenuBtn" class="text-sm text-gray-500 hover:text-indigo-600 flex items-center">
+        <div class="w-full flex justify-start mb-6">
+            <button id="backToMenuBtn" class="text-sm font-semibold text-gray-500 hover:text-indigo-600 flex items-center transition-colors bg-white px-4 py-2 rounded-full shadow-sm hover:shadow-md border border-gray-200">
                 &larr; Back to Main Menu
             </button>
         </div>
-        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Choose Topic</h2>
-        <div class="flex flex-wrap justify-center gap-4 w-full">
-            <button data-topic="solve_equations" class="selection-button bg-blue-500 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-blue-600 w-full sm:w-1/3">Solve Equations</button>
-            <button data-topic="formulate_equations" class="selection-button bg-purple-500 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-purple-600 w-full sm:w-1/3">Formulate Equations (Word Problems)</button>
+        <h2 class="text-3xl font-bold text-gray-800 mb-6">Choose Topic</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
+            <button data-topic="solve_equations" class="selection-button bg-white border-2 border-blue-100 text-blue-700 font-bold py-6 px-6 rounded-2xl shadow-sm hover:border-blue-500 hover:shadow-md w-full text-lg">
+                Solve Equations
+            </button>
+            <button data-topic="formulate_equations" class="selection-button bg-white border-2 border-purple-100 text-purple-700 font-bold py-6 px-6 rounded-2xl shadow-sm hover:border-purple-500 hover:shadow-md w-full text-lg">
+                Formulate Equations <span class="block text-xs font-normal mt-1 text-gray-500">(Word Problems)</span>
+            </button>
         </div>
     </div>
 
     <!-- Screen 2: Difficulty Selector -->
     <div id="difficultySelector" class="hidden flex flex-col items-center w-full max-w-2xl mt-8">
-        <div class="w-full flex justify-start mb-4 hidden" id="diffBackContainer">
-            <!-- Back button injected via JS based on flow -->
+        <h2 class="text-3xl font-bold text-gray-800 mb-6" id="difficultyPrompt">Choose Difficulty</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
+            <button data-difficulty="simple" class="selection-button bg-white border-2 border-green-100 text-green-700 font-bold py-6 px-6 rounded-2xl shadow-sm hover:border-green-500 hover:shadow-md w-full text-lg">
+                Simple
+            </button>
+            <button data-difficulty="difficult" class="selection-button bg-white border-2 border-red-100 text-red-700 font-bold py-6 px-6 rounded-2xl shadow-sm hover:border-red-500 hover:shadow-md w-full text-lg">
+                Difficult
+            </button>
         </div>
-        <h2 class="text-2xl font-semibold text-gray-700 mb-4" id="difficultyPrompt">Choose Difficulty</h2>
-        <div class="flex flex-wrap justify-center gap-4 w-full">
-            <button data-difficulty="simple" class="selection-button bg-green-500 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-green-600 w-full sm:w-1/3">Simple</button>
-            <button data-difficulty="difficult" class="selection-button bg-red-500 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-red-600 w-full sm:w-1/3">Difficult</button>
-        </div>
-        <button id="diffCancelBtn" class="mt-6 text-sm text-gray-500 hover:text-indigo-600">
+        <button id="diffCancelBtn" class="mt-8 text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors">
             Cancel
         </button>
     </div>
 
 
     <!-- Quiz Card -->
-    <div id="quizCard" class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-lg transition-all duration-300 transform scale-100 opacity-0 hidden mt-8 relative">
+    <div id="quizCard" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg transition-all duration-300 transform scale-100 opacity-0 hidden mt-8 relative border border-gray-100">
         
         <!-- In-Quiz Navigation -->
-        <div class="absolute top-4 left-4">
-            <button id="quizBackToMenu" class="text-xs font-semibold text-gray-400 hover:text-gray-600 transition">
+        <div class="absolute top-6 left-6">
+            <button id="quizBackToMenu" class="text-xs font-bold text-gray-300 hover:text-gray-500 transition uppercase tracking-wide">
                 &larr; Main Menu
             </button>
         </div>
 
-        <h2 id="quizTitle" class="text-2xl font-semibold text-center mb-4 text-gray-700 mt-2"></h2>
+        <h2 id="quizTitle" class="text-2xl font-bold text-center mb-6 text-gray-800 mt-2"></h2>
         
-        <div class="bg-blue-50 p-4 rounded-lg mb-6 border-l-4 border-blue-500">
-            <p id="formulaDisplay" class="text-center text-xl font-mono text-blue-700 h-10 flex items-center justify-center">
-            </p>
-            <div id="questionText" class="text-center text-lg mt-2 text-gray-800 font-medium">
+        <!-- Equation Display Area -->
+        <div class="bg-gradient-to-b from-gray-50 to-white p-1 rounded-xl mb-6 border border-gray-200">
+            <div id="questionText" class="text-center text-lg mt-2 text-gray-700 font-medium px-4 py-2">
             </div>
+            <!-- Formula Display (if used) -->
+             <p id="formulaDisplay" class="text-center text-xl font-mono text-blue-700 h-0 flex items-center justify-center overflow-hidden"></p>
         </div>
 
-        <div id="inputContainer" class="flex flex-col sm:flex-row gap-4 mb-4">
-            <input id="answerInput" placeholder="Enter your answer..." class="flex-grow p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-            <button id="submitButton" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-700 transition duration-150 transform hover:scale-[1.01]">
-                Submit Answer
+        <div id="inputContainer" class="flex flex-col sm:flex-row gap-4 mb-6">
+            <input id="answerInput" placeholder="Enter your answer..." class="flex-grow p-4 bg-gray-50 border-2 border-gray-200 rounded-xl text-lg focus:bg-white focus:border-indigo-500 focus:ring-0 transition-all outline-none font-medium text-gray-700">
+            <button id="submitButton" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-indigo-700 hover:shadow-xl transition-all transform active:scale-95">
+                Submit
             </button>
         </div>
 
         <div id="feedbackContainer">
-            <p id="resultMessage" class="text-center font-semibold h-6"></p>
-            <div id="solutionDisplay" class="hidden mt-4 p-4 rounded-lg">
-                <p class="font-bold mb-2 text-xl" id="solutionTitle"></p>
-                <div id="solutionText" class="text-sm font-medium"></div>
+            <p id="resultMessage" class="text-center font-bold h-8 text-lg"></p>
+            <div id="solutionDisplay" class="hidden mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 text-gray-800 shadow-inner">
+                <p class="font-bold mb-3 text-xl text-gray-900 border-b pb-2" id="solutionTitle">Solution</p>
+                <div id="solutionText" class="text-base"></div>
             </div>
-            <button id="nextButton" class="hidden w-full mt-4 bg-purple-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-purple-700 transition duration-150 transform hover:scale-[1.01]">
-                Next Question
+            <button id="nextButton" class="hidden w-full mt-6 bg-gray-900 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:bg-black transition-all transform hover:scale-[1.01]">
+                Next Question &rarr;
             </button>
         </div>
 
-        <div class="text-center mt-6 pt-4 border-t border-gray-200">
-            <p class="text-sm text-gray-500">
-                Difficulty: <span id="difficultyTracker" class="text-lg font-bold text-gray-700 capitalize">N/A</span> | 
-                Subject: <span id="subjectTracker" class="text-lg font-bold text-gray-700 capitalize">N/A</span>
-            </p>
-            <p class="text-sm text-gray-500 mt-1">
-                Question: <span id="currentQuestionNumber" class="text-lg font-bold text-gray-700">0</span> / <span id="maxQuestionsTracker" class="text-lg font-bold text-gray-700">10</span> |
-                Score: <span id="scoreTracker" class="text-lg font-bold text-gray-700">0</span>
+        <div class="text-center mt-8 pt-6 border-t border-gray-100">
+            <div class="flex justify-between items-center text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                <span id="subjectTracker">Subject</span>
+                <span id="difficultyTracker">Level</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4 overflow-hidden">
+                <div id="progressBar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <p class="text-sm text-gray-500 font-medium">
+                Question <span id="currentQuestionNumber" class="text-gray-900 font-bold">1</span> of <span id="maxQuestionsTracker">10</span>
+                <span class="mx-2 text-gray-300">|</span>
+                Score: <span id="scoreTracker" class="text-indigo-600 font-bold">0</span>
             </p>
             
             <!-- I'm Done Button -->
-            <button id="imDoneButton" class="mt-4 text-sm font-bold text-orange-500 border border-orange-200 bg-orange-50 hover:bg-orange-100 hover:border-orange-300 rounded-full px-4 py-1 transition">
-                I'm Done (Skip to Results)
+            <button id="imDoneButton" class="mt-6 text-xs font-bold text-gray-400 hover:text-orange-500 border border-transparent hover:border-orange-200 rounded-full px-4 py-2 transition-colors">
+                Finish Early
             </button>
         </div>
     </div>
 
     <!-- Results Card -->
-    <div id="resultsCard" class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-lg text-center transition-all duration-300 transform scale-100 opacity-0 hidden mt-8">
-        <h2 class="text-3xl font-bold text-green-700 mb-4">Quiz Complete!</h2>
-        <p class="text-xl text-gray-700 mb-6">Your final score on the <span id="finalDifficulty"></span> <span id="finalTopic"></span> quiz is:</p>
-        <div class="text-6xl font-extrabold text-blue-600 mb-8">
-            <span id="finalScore">0</span> / <span id="finalTotal">10</span>
+    <div id="resultsCard" class="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-lg text-center transition-all duration-300 transform scale-100 opacity-0 hidden mt-8">
+        <h2 id="resultTitle" class="text-4xl font-extrabold text-gray-900 mb-6">Quiz Complete!</h2>
+        
+        <!-- Verification Box -->
+        <div class="bg-slate-50 border border-slate-200 p-5 mb-8 rounded-xl text-left relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-16 h-16 bg-green-500 transform rotate-45 translate-x-8 -translate-y-8"></div>
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Verification Ticket</h3>
+            <div class="space-y-1">
+                <p class="text-sm text-gray-500">Name: <span id="finalStudentName" class="text-lg font-bold text-gray-900 ml-1 block sm:inline"></span></p>
+                <p class="text-sm text-gray-500">Date: <span id="finalTimestamp" class="font-mono font-medium text-gray-700 ml-1 block sm:inline"></span></p>
+            </div>
         </div>
-        <p class="text-gray-500 mb-8">Ready for another practice session?</p>
-        <button id="restartButton" class="bg-purple-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-purple-700 transition duration-150 transform hover:scale-[1.03]">
+
+        <div id="streakMessage" class="hidden bg-orange-50 border border-orange-100 text-orange-700 px-4 py-3 rounded-lg mb-6 flex items-center justify-center gap-2 animate-bounce">
+            <span class="text-xl">🔥</span> 
+            <span class="font-bold">Daily Streak Increased!</span>
+        </div>
+
+        <p class="text-lg text-gray-500 mb-2">Final Score</p>
+        <div class="text-7xl font-black text-indigo-600 mb-2 tracking-tighter">
+            <span id="finalScore">0</span><span class="text-4xl text-gray-300 font-medium">/</span><span id="finalTotal" class="text-4xl text-gray-300 font-medium">10</span>
+        </div>
+        <p class="text-gray-400 mb-10 text-sm">Great effort!</p>
+
+        <button id="restartButton" class="bg-gray-900 text-white font-bold py-4 px-10 rounded-2xl shadow-xl hover:bg-black transition-all transform hover:scale-[1.02] w-full">
             Back to Main Menu
         </button>
     </div>
 
     <!-- Custom Confirmation Modal -->
-    <div id="customModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden flex items-center justify-center z-50">
-        <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3 text-center">
-                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modalTitle">Confirmation</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500" id="modalMessage">Are you sure?</p>
-                </div>
-                <div class="items-center px-4 py-3 flex justify-center gap-4">
-                    <button id="modalYesBtn" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-24 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
-                        Yes
+    <div id="customModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm overflow-y-auto h-full w-full hidden flex items-center justify-center z-50 transition-opacity">
+        <div class="relative p-8 bg-white w-full max-w-sm rounded-2xl shadow-2xl transform transition-all scale-100">
+            <div class="text-center">
+                <h3 class="text-xl font-bold text-gray-900 mb-2" id="modalTitle">Confirmation</h3>
+                <p class="text-gray-500 mb-6" id="modalMessage">Are you sure?</p>
+                <div class="flex justify-center gap-3">
+                    <button id="modalNoBtn" class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition">
+                        Cancel
                     </button>
-                    <button id="modalNoBtn" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-24 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                        No
+                    <button id="modalYesBtn" class="flex-1 px-4 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition shadow-md">
+                        Yes
                     </button>
                 </div>
             </div>
@@ -234,11 +306,14 @@
     const mainTitle = document.getElementById('mainTitle');
     const headerSubtitle = document.getElementById('headerSubtitle');
 
+    // Input
+    const studentNameInput = document.getElementById('studentName');
+
     // Buttons
     const btnSimultaneous = document.getElementById('btnSimultaneous');
     const btnBasicAlgebra = document.getElementById('btnBasicAlgebra');
     const backToMenuBtn = document.getElementById('backToMenuBtn');
-    const diffCancelBtn = document.getElementById('diffCancelBtn'); // Renamed from backToTopicBtn for clarity
+    const diffCancelBtn = document.getElementById('diffCancelBtn'); 
     const quizBackToMenu = document.getElementById('quizBackToMenu');
     const topicButtons = document.querySelectorAll('#topicSelector .selection-button');
     const difficultyButtons = document.querySelectorAll('#difficultySelector .selection-button');
@@ -249,6 +324,10 @@
     const imDoneButton = document.getElementById('imDoneButton');
     const restartButton = document.getElementById('restartButton');
     const backToStartButton = document.getElementById('backToStartButton');
+
+    // Streak UI
+    const streakCountDisplay = document.getElementById('streakCount');
+    const streakMessage = document.getElementById('streakMessage');
 
     // Modal
     const customModal = document.getElementById('customModal');
@@ -263,6 +342,7 @@
     const maxQuestionsTracker = document.getElementById('maxQuestionsTracker');
     const difficultyTracker = document.getElementById('difficultyTracker');
     const subjectTracker = document.getElementById('subjectTracker');
+    const progressBar = document.getElementById('progressBar');
 
     // State
     let currentSubject = null; // 'simultaneous' or 'algebra'
@@ -273,6 +353,39 @@
     let score = 0;
     let totalQuestions = 0; 
     let sessionActive = false; 
+
+    // --- STREAK LOGIC ---
+    function initStreak() {
+        const storedStreak = localStorage.getItem('math_streak') || '0';
+        streakCountDisplay.textContent = storedStreak;
+    }
+
+    function checkAndIncrementStreak(finalScore, subject) {
+        if (subject !== 'Simultaneous Equations') return false;
+        if (finalScore < 5) return false;
+
+        const today = new Date().setHours(0,0,0,0);
+        const lastDate = parseInt(localStorage.getItem('math_lastStreakDate') || '0');
+        let streak = parseInt(localStorage.getItem('math_streak') || '0');
+        let incremented = false;
+
+        const msPerDay = 1000 * 60 * 60 * 24;
+        const diffDays = Math.round((today - lastDate) / msPerDay);
+
+        if (lastDate === 0) {
+            streak = 1; incremented = true; localStorage.setItem('math_lastStreakDate', today.toString());
+        } else if (diffDays === 1) {
+            streak++; incremented = true; localStorage.setItem('math_lastStreakDate', today.toString());
+        } else if (diffDays > 1) {
+            streak = 1; incremented = true; localStorage.setItem('math_lastStreakDate', today.toString());
+        } else if (diffDays === 0) {
+            incremented = false; 
+        }
+
+        localStorage.setItem('math_streak', streak.toString());
+        streakCountDisplay.textContent = streak;
+        return incremented;
+    }
 
     // --- Utils ---
     const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -288,62 +401,58 @@
             }
         }
         const integerPart = Math.floor(absNum); numerator = integerPart * denominator + numerator;
-        return sign + numerator + '/' + denominator;
+        // Return HTML Structure for Fraction
+        return `${sign}<span class="fraction"><span class="numerator">${numerator}</span><span class="denominator">${denominator}</span></span>`;
     };
+    
+    // New Format Coefficient using HTML for fractions
     const formatCoefficient = (a, variable) => {
+        const vHtml = `<span class="math-var">${variable}</span>`;
         if (typeof a === 'string' && a.includes('/')) {
             const parts = a.split('/'); let num = parseInt(parts[0]); const den = parseInt(parts[1]);
             let sign = ''; if (num < 0) { sign = '-'; num = Math.abs(num); }
-            if (num === 1) return sign + variable + '/' + den; return sign + num + '/' + den + variable;
+            // HTML Fraction
+            const fracHtml = `<span class="fraction"><span class="numerator">${num}</span><span class="denominator">${den}</span></span>`;
+            if (num === 1 && den !== 1) return `${sign}${fracHtml}${vHtml}`;
+            return `${sign}${fracHtml}${vHtml}`;
         }
-        if (a === 1) return variable; if (a === -1) return '-' + variable; return a + variable;
+        if (a === 1) return vHtml; 
+        if (a === -1) return '-' + vHtml; 
+        return a + vHtml;
     };
     
-    // UPDATED formatTerm to correctly handle spacing and signs for string fractions
     const formatTerm = (coeff, variable, includeSign = true) => {
         if (coeff === 0 || coeff === '0') return '';
         
         let termStr = '';
         let isNegative = false;
         
-        // Handle Fraction String
         if (typeof coeff === 'string' && coeff.includes('/')) {
             if (coeff.startsWith('-')) {
                 isNegative = true;
-                // Remove '-' for formatting the absolute part
                 termStr = formatCoefficient(coeff.substring(1), variable);
             } else {
                 isNegative = false;
                 termStr = formatCoefficient(coeff, variable);
             }
-        } 
-        // Handle Numeric
-        else {
+        } else {
             isNegative = coeff < 0;
             const absCoeff = Math.abs(coeff);
-            if (absCoeff === 1) {
-                termStr = variable;
-            } else {
-                termStr = absCoeff + variable;
-            }
+            const vHtml = `<span class="math-var">${variable}</span>`;
+            if (absCoeff === 1 && variable) termStr = vHtml;
+            else if (!variable) termStr = absCoeff; // Constant term
+            else termStr = absCoeff + vHtml;
         }
 
-        // Add Sign
-        if (isNegative) {
-            return ' - ' + termStr;
-        } else if (includeSign) {
-            return ' + ' + termStr;
-        } else {
-            return termStr;
-        }
+        if (isNegative) return ' - ' + termStr;
+        else if (includeSign) return ' + ' + termStr;
+        else return termStr;
     };
 
-    // --- Answer Checking Functions (Missing in previous snippet, causing ReferenceError) ---
+    // --- Answer Checking Functions ---
     const parseTerms = (side, variables) => {
         let terms = { A: 0, B: 0, C: 0 }; 
         side = side.toLowerCase().replace(/\s/g, '');
-        
-        // Handle shorthand like 2(x+6) -> 2x+12
         side = side.replace(/(\d+)\((.)\s*([+-])\s*(.)\)/g, (match, coeff, var1, sign, term2) => {
             const A_new = parseFloat(coeff);
             let result = `${A_new}${var1}`;
@@ -357,21 +466,16 @@
             }
             return result.replace(/\+/g, '+').replace(/-/g, '-');
         });
-        
         const tokens = (side.match(/([+-]?\d*\.?\d*[a-z])|([+-]?\d+\.?\d*)/g) || []).filter(t => t);
-
         tokens.forEach(token => {
             const isVariable = token.match(/[a-z]/);
             if (isVariable) {
                 const variable = isVariable[0];
                 let coefficient = parseFloat(token.replace(variable, ''));
                 if (isNaN(coefficient)) coefficient = (token.startsWith('-') ? -1 : 1);
-                
                 if (variable === variables[0].toLowerCase()) terms.A += coefficient;
                 else if (variable === variables[1].toLowerCase()) terms.B += coefficient;
-            } else {
-                terms.C += parseFloat(token);
-            }
+            } else { terms.C += parseFloat(token); }
         });
         return terms;
     };
@@ -379,250 +483,97 @@
     const canonicalizeEquation = (equationString, var1, var2) => {
         const parts = equationString.toLowerCase().replace(/\s/g, '').split('=');
         if (parts.length !== 2) return "error";
-
         const variables = [var1, var2]; 
         try {
             const termsLHS = parseTerms(parts[0], variables);
             const termsRHS = parseTerms(parts[1], variables);
-    
             let A = termsLHS.A - termsRHS.A;
             let B = termsLHS.B - termsRHS.B;
             let C = termsRHS.C - termsLHS.C;
-
             A = Math.round(A * 1000) / 1000;
             B = Math.round(B * 1000) / 1000;
             C = Math.round(C * 1000) / 1000;
-    
-            if (A < 0 || (A === 0 && B < 0)) {
-                A *= -1; B *= -1; C *= -1;
-            }
-            
+            if (A < 0 || (A === 0 && B < 0)) { A *= -1; B *= -1; C *= -1; }
             return `${A},${B},${C}`;
-        } catch (e) {
-            console.error("Error during canonicalization:", e);
-            return "error"; 
-        }
+        } catch (e) { return "error"; }
     };
 
-    // --- ALGEBRA GENERATORS (NEW) ---
-
-    // 1. Algebra Simple: ax + bx = c
+    // --- ALGEBRA GENERATORS ---
     const generateAlgebraSimple = () => {
         const variable = ['x', 'y', 'a', 'b', 'n', 'p'][randInt(0, 5)];
         const ans = randInt(-10, 10);
         let c1, c2;
-        // Ensure non-zero simplification
-        do {
-            c1 = randInt(-9, 9);
-            c2 = randInt(-9, 9);
-        } while (c1 === 0 || c2 === 0 || c1 + c2 === 0);
-        
+        do { c1 = randInt(-9, 9); c2 = randInt(-9, 9); } while (c1 === 0 || c2 === 0 || c1 + c2 === 0);
         const totalCoeff = c1 + c2;
         const totalConst = totalCoeff * ans;
-        
+        // Using formatTerm which now returns HTML
         const eqStr = `${formatTerm(c1, variable, false)} ${formatTerm(c2, variable, true)} = ${totalConst}`;
-        
-        return {
-            title: 'Basic Algebra (Simple)',
-            formula: '',
-            question: `Solve for ${variable}:<div class="equation-block">${eqStr}</div>`,
-            answerX: ans, // Generic answer holder
-            variable: variable,
-            type: 'simple_combine',
-            meta: { c1, c2, totalCoeff, totalConst }
-        };
+        return { title: 'Basic Algebra (Simple)', formula: '', question: `Solve for <span class="math-var">${variable}</span>:<div class="equation-block">${eqStr}</div>`, answerX: ans, variable: variable, type: 'simple_combine', meta: { c1, c2, totalCoeff, totalConst } };
     };
 
-    // 2. Algebra Difficult: Mixed Types
     const generateAlgebraDifficult = () => {
-        const type = randInt(1, 4); // 1: Combine+Const, 2: Parentheses, 3: Neg Bracket, 4: Fraction
+        const type = randInt(1, 4); 
         const variable = ['x', 'y', 'c', 'n', 'p', 'm'][randInt(0, 5)];
+        const vHtml = `<span class="math-var">${variable}</span>`;
         let ans, eqStr, meta = {};
-
         if (type === 1) { 
-            // Combine + Constant: d + ax + bx = c -> -4 - 4n - 11n = 26
-            ans = randInt(-10, 10);
-            let d = randInt(-10, 10);
-            let c1 = randInt(-10, 10);
-            let c2 = randInt(-10, 10);
-            // Ensure valid
+            ans = randInt(-10, 10); let d = randInt(-10, 10); let c1 = randInt(-10, 10); let c2 = randInt(-10, 10);
             while(c1+c2 === 0 || c1===0 || c2===0) { c1 = randInt(-9,9); c2 = randInt(-9,9); }
-            
-            const totalCoeff = c1 + c2;
-            const rhs = d + (totalCoeff * ans);
-            
+            const totalCoeff = c1 + c2; const rhs = d + (totalCoeff * ans);
             eqStr = `${d} ${formatTerm(c1, variable, true)} ${formatTerm(c2, variable, true)} = ${rhs}`;
             meta = { subtype: 'combine_const', d, c1, c2, rhs, totalCoeff };
-
         } else if (type === 2) {
-            // Parentheses: a(x - b) = x (or similar) -> 2(c-2) = 5c - 1
-            // Form: a(x + b) = cx + d
-            ans = randInt(-10, 10);
-            let a = randInt(2, 5);
-            let b = randInt(-5, 5);
-            let c = randInt(1, 6);
-            // ensure a != c to avoid parallel/no solution
+            ans = randInt(-10, 10); let a = randInt(2, 5); let b = randInt(-5, 5); let c = randInt(1, 6);
             while (a === c) c = randInt(1, 6);
-            
-            // a(ans + b) = c*ans + d  => d = a(ans+b) - c*ans
             let d = a * (ans + b) - (c * ans);
-            
             let b_display = b < 0 ? `- ${Math.abs(b)}` : `+ ${b}`;
-            eqStr = `${a}(${variable} ${b_display}) = ${formatTerm(c, variable, false)} ${d >= 0 ? '+ '+d : '- '+Math.abs(d)}`;
+            eqStr = `${a}(${vHtml} ${b_display}) = ${formatTerm(c, variable, false)} ${d >= 0 ? '+ '+d : '- '+Math.abs(d)}`;
             meta = { subtype: 'parentheses', a, b, c, d };
-
         } else if (type === 3) {
-            // Negative Bracket: -(ax - b) = cx + d
-            ans = randInt(-10, 10);
-            let a = randInt(2, 5);
-            let b = randInt(-5, 5); // inside bracket const
-            let c = randInt(1, 5);
-            
-            // LHS: -(ax + b) = -ax - b
-            // RHS: cx + d
-            // -ax - b = cx + d => -b - d = (c+a)x => d = -b - (c+a)x
+            ans = randInt(-10, 10); let a = randInt(2, 5); let b = randInt(-5, 5); let c = randInt(1, 5);
             let d = -b - (c + a) * ans;
-            
             let b_display = b < 0 ? `- ${Math.abs(b)}` : `+ ${b}`;
-            eqStr = `-(${a}${variable} ${b_display}) = ${formatTerm(c, variable, false)} ${d >= 0 ? '+ '+d : '- '+Math.abs(d)}`;
+            eqStr = `-(${a}${vHtml} ${b_display}) = ${formatTerm(c, variable, false)} ${d >= 0 ? '+ '+d : '- '+Math.abs(d)}`;
             meta = { subtype: 'neg_bracket', a, b, c, d };
-
         } else {
-            // Fraction: ax + x/k = c OR m + m/7 = 8
-            // Form: a*x + x/k = c
-            // We want integer answer.
-            let k = randInt(2, 8); // denominator
-            ans = randInt(1, 5) * k; // answer is multiple of k
-            let a = randInt(1, 3);
-            
-            // LHS = a*ans + ans/k
+            let k = randInt(2, 8); ans = randInt(1, 5) * k; let a = randInt(1, 3);
             let lhs_val = a * ans + (ans / k);
-            
-            // Display: 2p - p/4 = 14 or m + m/7 = 8
             let op = '+';
-            if (randInt(0, 1) === 1) { 
-                // Subtraction case: ax - x/k
-                op = '-';
-                lhs_val = a * ans - (ans / k);
-            }
-            
-            eqStr = `${formatTerm(a, variable, false)} ${op} ${variable}/${k} = ${lhs_val}`;
+            if (randInt(0, 1) === 1) { op = '-'; lhs_val = a * ans - (ans / k); }
+            const fracHtml = `<span class="fraction"><span class="numerator">${vHtml}</span><span class="denominator">${k}</span></span>`;
+            eqStr = `${formatTerm(a, variable, false)} ${op} ${fracHtml} = ${lhs_val}`;
             meta = { subtype: 'fraction', a, k, op, lhs_val };
         }
-
-        return {
-            title: 'Basic Algebra (Difficult)',
-            formula: '',
-            question: `Solve for ${variable}:<div class="equation-block">${eqStr}</div>`,
-            answerX: ans,
-            variable: variable,
-            type: 'algebra_difficult',
-            meta: meta
-        };
+        return { title: 'Basic Algebra (Difficult)', formula: '', question: `Solve for <span class="math-var">${variable}</span>:<div class="equation-block">${eqStr}</div>`, answerX: ans, variable: variable, type: 'algebra_difficult', meta: meta };
     };
 
     // --- ALGEBRA EXPLANATIONS ---
     const generateAlgebraExplanation = (q) => {
-        const v = q.variable;
-        const ans = q.answerX;
-        let explanation = `<strong>Step 0: Analyze the Equation</strong><br>
-        <div class="equation-block">${q.question.replace(/<[^>]*>/g, '').replace('Solve for '+v+':', '')}</div><br>`;
-
+        const v = `<span class="math-var">${q.variable}</span>`; const ans = q.answerX;
+        // Safe check for question format before replace
+        let cleanQ = q.question.includes('equation-block') ? q.question.match(/<div class="equation-block">(.*?)<\/div>/)[1] : q.question;
+        let explanation = `<strong>Step 0: Analyze the Equation</strong><br><div class="equation-block">${cleanQ}</div><br>`;
         if (q.type === 'simple_combine') {
             const { c1, c2, totalCoeff, totalConst } = q.meta;
-            explanation += `<strong>Step 1: Combine Like Terms</strong><br>
-            Combine ${c1}${v} and ${c2 > 0 ? '+' : ''}${c2}${v}:<br>
-            <div class="equation-block">
-            (${c1} ${c2 > 0 ? '+' : ''}${c2})${v} = ${totalConst}<br>
-            ${totalCoeff}${v} = ${totalConst}
-            </div><br>
-            <strong>Step 2: Solve</strong><br>
-            Divide by ${totalCoeff}:
-            <div class="equation-block">
-            ${v} = ${totalConst} / ${totalCoeff}<br>
-            ${v} = ${ans}
-            </div>`;
-        } 
-        else if (q.type === 'algebra_difficult') {
+            explanation += `<strong>Step 1: Combine Like Terms</strong><br>Combine ${c1}${v} and ${c2 > 0 ? '+' : ''}${c2}${v}:<br><div class="equation-block">(${c1} ${c2 > 0 ? '+' : ''}${c2})${v} = ${totalConst}<br>${totalCoeff}${v} = ${totalConst}</div><br><strong>Step 2: Solve</strong><br>Divide by ${totalCoeff}:<div class="equation-block">${v} = ${totalConst} / ${totalCoeff}<br>${v} = ${ans}</div>`;
+        } else if (q.type === 'algebra_difficult') {
             const m = q.meta;
             if (m.subtype === 'combine_const') {
-                explanation += `<strong>Step 1: Combine Like Terms</strong><br>
-                Combine the ${v} terms (${m.c1}${v} and ${m.c2}${v}):<br>
-                <div class="equation-block">${m.d} ${m.totalCoeff > 0 ? '+' : ''}${m.totalCoeff}${v} = ${m.rhs}</div><br>
-                <strong>Step 2: Move Constant</strong><br>
-                Subtract ${m.d} from both sides:<br>
-                <div class="equation-block">
-                ${m.totalCoeff}${v} = ${m.rhs} - ${m.d}<br>
-                ${m.totalCoeff}${v} = ${m.rhs - m.d}
-                </div><br>
-                <strong>Step 3: Solve</strong><br>
-                <div class="equation-block">${v} = ${(m.rhs - m.d)} / ${m.totalCoeff} = ${ans}</div>`;
-            } 
-            else if (m.subtype === 'parentheses') {
-                // a(x + b) = cx + d
-                let dist = m.a * m.b;
-                let dist_str = dist >= 0 ? `+ ${dist}` : `- ${Math.abs(dist)}`;
-                explanation += `<strong>Step 1: Expand Brackets</strong><br>
-                Multiply ${m.a} into the parentheses:<br>
-                <div class="equation-block">${m.a}${v} ${dist_str} = ${m.c}${v} ${m.d >= 0 ? '+ '+m.d : m.d}</div><br>
-                <strong>Step 2: Collect Variables</strong><br>
-                Subtract ${m.c}${v} from both sides:<br>
-                <div class="equation-block">${m.a - m.c}${v} ${dist_str} = ${m.d}</div><br>
-                <strong>Step 3: Solve</strong><br>
-                Move constant ${dist} to the right:<br>
-                <div class="equation-block">
-                ${m.a - m.c}${v} = ${m.d} - (${dist})<br>
-                ${m.a - m.c}${v} = ${m.d - dist}<br>
-                ${v} = ${ans}
-                </div>`;
-            }
-            else if (m.subtype === 'neg_bracket') {
-                // -(ax + b) = cx + d
-                let dist_b = -1 * m.b;
-                let dist_b_str = dist_b >= 0 ? `+ ${dist_b}` : `- ${Math.abs(dist_b)}`;
-                explanation += `<strong>Step 1: Expand Negative Sign</strong><br>
-                Distribute the negative sign:<br>
-                <div class="equation-block">-${m.a}${v} ${dist_b_str} = ${m.c}${v} ${m.d >= 0 ? '+ '+m.d : m.d}</div><br>
-                <strong>Step 2: Collect Variables</strong><br>
-                Move variables to one side (e.g., add ${m.a}${v}):<br>
-                <div class="equation-block">
-                ${dist_b} = (${m.c} + ${m.a})${v} ${m.d >= 0 ? '+ '+m.d : m.d}<br>
-                ${dist_b} = ${m.c + m.a}${v} ${m.d >= 0 ? '+ '+m.d : m.d}
-                </div><br>
-                <strong>Step 3: Solve</strong><br>
-                <div class="equation-block">
-                ${dist_b} - (${m.d}) = ${m.c + m.a}${v}<br>
-                ${dist_b - m.d} = ${m.c + m.a}${v}<br>
-                ${v} = ${ans}
-                </div>`;
-            }
-            else if (m.subtype === 'fraction') {
-                // ax +/- x/k = c
-                let opText = m.op === '+' ? 'Add' : 'Subtract';
-                explanation += `<strong>Step 1: Clear Fraction</strong><br>
-                Multiply the entire equation by ${m.k}:<br>
-                <div class="equation-block">
-                ${m.k}(${m.a}${v}) ${m.op} ${v} = ${m.k}(${m.lhs_val})<br>
-                ${m.a * m.k}${v} ${m.op} ${v} = ${m.lhs_val * m.k}
-                </div><br>
-                <strong>Step 2: Combine Terms</strong><br>
-                <div class="equation-block">
-                (${m.a * m.k} ${m.op} 1)${v} = ${m.lhs_val * m.k}<br>
-                ${m.op === '+' ? m.a*m.k + 1 : m.a*m.k - 1}${v} = ${m.lhs_val * m.k}
-                </div><br>
-                <strong>Step 3: Solve</strong><br>
-                <div class="equation-block">${v} = ${ans}</div>`;
+                explanation += `<strong>Step 1: Combine Like Terms</strong><br>Combine the ${v} terms (${m.c1}${v} and ${m.c2}${v}):<br><div class="equation-block">${m.d} ${m.totalCoeff > 0 ? '+' : ''}${m.totalCoeff}${v} = ${m.rhs}</div><br><strong>Step 2: Move Constant</strong><br>Subtract ${m.d} from both sides:<br><div class="equation-block">${m.totalCoeff}${v} = ${m.rhs} - ${m.d}<br>${m.totalCoeff}${v} = ${m.rhs - m.d}</div><br><strong>Step 3: Solve</strong><br><div class="equation-block">${v} = ${(m.rhs - m.d)} / ${m.totalCoeff} = ${ans}</div>`;
+            } else if (m.subtype === 'parentheses') {
+                let dist = m.a * m.b; let dist_str = dist >= 0 ? `+ ${dist}` : `- ${Math.abs(dist)}`;
+                explanation += `<strong>Step 1: Expand Brackets</strong><br>Multiply ${m.a} into the parentheses:<br><div class="equation-block">${m.a}${v} ${dist_str} = ${m.c}${v} ${m.d >= 0 ? '+ '+m.d : m.d}</div><br><strong>Step 2: Collect Variables</strong><br>Subtract ${m.c}${v} from both sides:<br><div class="equation-block">${m.a - m.c}${v} ${dist_str} = ${m.d}</div><br><strong>Step 3: Solve</strong><br>Move constant ${dist} to the right:<br><div class="equation-block">${m.a - m.c}${v} = ${m.d} - (${dist})<br>${m.a - m.c}${v} = ${m.d - dist}<br>${v} = ${ans}</div>`;
+            } else if (m.subtype === 'neg_bracket') {
+                let dist_b = -1 * m.b; let dist_b_str = dist_b >= 0 ? `+ ${dist_b}` : `- ${Math.abs(dist_b)}`;
+                explanation += `<strong>Step 1: Expand Negative Sign</strong><br>Distribute the negative sign:<br><div class="equation-block">-${m.a}${v} ${dist_b_str} = ${m.c}${v} ${m.d >= 0 ? '+ '+m.d : m.d}</div><br><strong>Step 2: Collect Variables</strong><br>Move variables to one side (e.g., add ${m.a}${v}):<br><div class="equation-block">${dist_b} = (${m.c} + ${m.a})${v} ${m.d >= 0 ? '+ '+m.d : m.d}<br>${dist_b} = ${m.c + m.a}${v} ${m.d >= 0 ? '+ '+m.d : m.d}</div><br><strong>Step 3: Solve</strong><br><div class="equation-block">${dist_b} - (${m.d}) = ${m.c + m.a}${v}<br>${dist_b - m.d} = ${m.c + m.a}${v}<br>${v} = ${ans}</div>`;
+            } else if (m.subtype === 'fraction') {
+                explanation += `<strong>Step 1: Clear Fraction</strong><br>Multiply the entire equation by ${m.k}:<br><div class="equation-block">${m.k}(${m.a}${v}) ${m.op} ${v} = ${m.k}(${m.lhs_val})<br>${m.a * m.k}${v} ${m.op} ${v} = ${m.lhs_val * m.k}</div><br><strong>Step 2: Combine Terms</strong><br><div class="equation-block">(${m.a * m.k} ${m.op} 1)${v} = ${m.lhs_val * m.k}<br>${m.op === '+' ? m.a*m.k + 1 : m.a*m.k - 1}${v} = ${m.lhs_val * m.k}</div><br><strong>Step 3: Solve</strong><br><div class="equation-block">${v} = ${ans}</div>`;
             }
         }
         return explanation;
     }
 
-
-    // --- SIMULTANEOUS GENERATORS (Existing - kept as is) ---
-    // (Simultaneous generators code block omitted for brevity but included in compilation)
-    // ... [Previous `generateSolveEquations_Simple`, `generateSolveEquations_MixedFraction`, formulation generators] ...
-    
-    // Placeholder to reconnect the omitted simultaneous logic
+    // --- SIMULTANEOUS GENERATORS (Existing) ---
     const generateSolveEquations_Simple_Sim = () => { 
         const x = randInt(1, 4) * (Math.random() < 0.5 ? 1 : -1); const y = randInt(1, 4) * (Math.random() < 0.5 ? 1 : -1); 
         let a1, b1, a2, b2; do { a1 = randInt(1, 2) * (Math.random() < 0.5 ? 1 : -1); b1 = randInt(1, 2) * (Math.random() < 0.5 ? 1 : -1); a2 = randInt(1, 5) * (Math.random() < 0.5 ? 1 : -1); b2 = randInt(1, 5) * (Math.random() < 0.5 ? 1 : -1); } while (a1 * b2 === a2 * b1);
@@ -634,7 +585,6 @@
         const x = randInt(1, 5) * (Math.random() < 0.5 ? 1 : -1); const y = randInt(1, 5) * (Math.random() < 0.5 ? 1 : -1); 
         const fractionPool = ['1/2', '1/3', '2/3', '1/4', '3/4', '1/5', '2/5']; const fracStr = fractionPool[randInt(0, fractionPool.length - 1)]; const fracVal = eval(fracStr); const fracPosition = randInt(0, 3); 
         let a1, b1, a2, b2; let a1Num, b1Num, a2Num, b2Num; let c1, c2;
-        // Simplified loop for brevity
         do { a1Num = randInt(1,4); b1Num = randInt(1,4); a2Num = randInt(1,4); b2Num = randInt(1,4); if(fracPosition===0) a1Num=fracVal; else if(fracPosition===1) b1Num=fracVal; else if(fracPosition===2) a2Num=fracVal; else b2Num=fracVal; if(Math.abs(a1Num*b2Num-a2Num*b1Num)>0.001) break; } while(true);
         c1 = a1Num*x + b1Num*y; c2 = a2Num*x + b2Num*y;
         a1 = fracPosition===0 ? fracStr : a1Num; b1 = fracPosition===1 ? fracStr : b1Num; a2 = fracPosition===2 ? fracStr : a2Num; b2 = fracPosition===3 ? fracStr : b2Num;
@@ -667,8 +617,6 @@
 
     // --- Explanation Router ---
     const generateSubstitutionExplanation = (q) => { 
-        // ... (Existing Simultaneous Explanation Code - Omitted to save space, unchanged) ...
-        // Re-implementing the function body that was condensed
         const x_ans = q.answerX; const y_ans = q.answerY; const eq1 = q.eq1; const eq2 = q.eq2;
         let explanation = `<strong>Step 0: Copy the question</strong><br><div class="equation-block"><div class="system-equations">${eq1.str} --- (1)<br>${eq2.str} --- (2)</div></div><br>`;
         let targetEq = null, otherEq = null, targetEqNum = 0, otherEqNum = 0; let subjectVar = '', otherVar = '';
@@ -697,11 +645,6 @@
         explanation += `<strong>Step 4: Draw the conclusion</strong><br>The solution is x = ${x_ans}, y = ${y_ans}.`;
         return explanation;
     };
-    const generateFormulationExplanation = (q) => {
-        const eq1Desc = q.generatorType === 'linear_combination' ? "This equation summarizes the <strong>First Transaction/Event</strong>." : "This equation summarizes the <strong>Total Games</strong>.";
-        const eq2Desc = q.generatorType === 'linear_combination' ? "This equation summarizes the <strong>Second Transaction/Event</strong>." : "This equation calculates the <strong>Total Points</strong>.";
-        return `<strong>1. Define Variables:</strong> <strong>${q.var1}</strong> and <strong>${q.var2}</strong> are the unknowns.<br><strong>2. Equation 1 Formulation:</strong><br>${eq1Desc}<div class="equation-block">Eq 1: ${q.answerEq1}</div><strong>3. Equation 2 Formulation:</strong><br>${eq2Desc}<div class="equation-block">Eq 2: ${q.answerEq2}</div><br><strong>Conclusion:</strong><br>Always ensure your two equations accurately reflect the numerical relationships described in the word problem.`;
-    };
 
     const getExplanation = () => {
         if (currentTopic === 'solve_algebra') return generateAlgebraExplanation(currentQuestion);
@@ -718,6 +661,9 @@
 
     // NAVIGATION
     btnSimultaneous.addEventListener('click', () => {
+        const name = studentNameInput.value.trim();
+        if (!name) { alert("Please enter your name first!"); return; }
+        
         currentSubject = 'Simultaneous Equations';
         mainTitle.textContent = "Simultaneous Equations";
         headerSubtitle.textContent = "Choose a topic.";
@@ -725,6 +671,9 @@
     });
 
     btnBasicAlgebra.addEventListener('click', () => {
+        const name = studentNameInput.value.trim();
+        if (!name) { alert("Please enter your name first!"); return; }
+
         currentSubject = 'Basic Algebra';
         currentTopic = 'solve_algebra'; // Virtual topic
         mainTitle.textContent = "Basic Algebra";
@@ -767,12 +716,16 @@
 
     function resetToMainMenu() {
         currentSubject = null; currentTopic = null; currentDifficulty = null;
-        mainTitle.textContent = "Math Quizzes"; headerSubtitle.textContent = "Select a subject.";
+        mainTitle.textContent = "Math Quizzes"; headerSubtitle.textContent = "Enter your name and select a subject to begin.";
         renderScreen('mainMenu');
     }
 
     const startNewSession = () => { 
         sessionActive = true; score = 0; totalQuestions = 0; 
+        
+        // Reset progress bar
+        progressBar.style.width = '0%';
+        
         renderScreen('quizCard'); loadQuestion(); 
     };
 
@@ -789,22 +742,26 @@
         nextButton.classList.add('hidden');
         document.getElementById('inputContainer').classList.remove('hidden');
         
+        // Update Progress
         currentQuestionNumber.textContent = totalQuestions + 1;
         scoreTracker.textContent = score;
+        const progress = ((totalQuestions) / MAX_QUESTIONS) * 100;
+        progressBar.style.width = `${progress}%`;
+
         difficultyTracker.textContent = currentDifficulty;
-        subjectTracker.textContent = currentSubject; // Show subject name
+        subjectTracker.textContent = currentSubject; 
 
         // Prompt Logic
         let prompt = '';
         if (currentTopic === 'solve_equations') {
             answerInput.type = 'number'; answerInput.step = '1'; prompt = "(STEP 1/2) Enter x.";
         } else if (currentTopic === 'solve_algebra') {
-            answerInput.type = 'number'; answerInput.step = '1'; prompt = `Enter value for ${currentQuestion.variable}.`;
+            answerInput.type = 'number'; answerInput.step = '1'; prompt = `Enter value for <span class="math-var">${currentQuestion.variable}</span>.`;
         } else {
             answerInput.type = 'text'; answerInput.removeAttribute('step'); prompt = "Enter Equation 1.";
         }
         
-        document.getElementById('questionText').innerHTML = currentQuestion.question + `<p class="mt-4 text-center text-lg font-bold text-blue-700">${prompt}</p>`;
+        document.getElementById('questionText').innerHTML = currentQuestion.question + `<p class="mt-4 text-center text-lg font-bold text-indigo-600">${prompt}</p>`;
     };
 
     const checkAnswer = () => {
@@ -820,21 +777,20 @@
             }
         } 
         else if (currentTopic === 'solve_equations') {
-            // ... (Existing Simultaneous logic) ...
             const numVal = parseFloat(val);
             if (currentStep === 'step1') {
                 if (Math.abs(numVal - currentQuestion.answerX) < 0.01) {
                     currentStep = 'step2';
-                    document.getElementById('questionText').innerHTML = currentQuestion.question + '<p class="mt-4 text-center text-lg font-bold text-blue-700">(STEP 2/2) Enter y.</p>';
+                    document.getElementById('questionText').innerHTML = currentQuestion.question + '<p class="mt-4 text-center text-lg font-bold text-indigo-600">(STEP 2/2) Enter y.</p>';
                     answerInput.value = '';
                     document.getElementById('resultMessage').textContent = "Correct X!";
+                    document.getElementById('resultMessage').className = "text-center font-bold h-8 text-lg text-green-600";
                 } else displaySolutionAndPause(false);
             } else {
                 if (Math.abs(numVal - currentQuestion.answerY) < 0.01) { score++; displaySolutionAndPause(true); } else displaySolutionAndPause(false);
             }
         } 
         else {
-            // ... (Existing Formulation logic) ...
             const can = canonicalizeEquation(val, currentQuestion.var1, currentQuestion.var2);
             const ans1 = canonicalizeEquation(currentQuestion.answerEq1, currentQuestion.var1, currentQuestion.var2);
             const ans2 = canonicalizeEquation(currentQuestion.answerEq2, currentQuestion.var1, currentQuestion.var2);
@@ -843,9 +799,10 @@
                 if (can === ans1 || can === ans2) {
                     currentStep = 'step2';
                     if (can === ans2) [currentQuestion.answerEq1, currentQuestion.answerEq2] = [currentQuestion.answerEq2, currentQuestion.answerEq1];
-                    document.getElementById('questionText').innerHTML = currentQuestion.question + '<p class="mt-4 text-center text-lg font-bold text-blue-700">(STEP 2/2) Enter Eq 2.</p>';
+                    document.getElementById('questionText').innerHTML = currentQuestion.question + '<p class="mt-4 text-center text-lg font-bold text-indigo-600">(STEP 2/2) Enter Eq 2.</p>';
                     answerInput.value = '';
                     document.getElementById('resultMessage').textContent = "Correct Eq 1!";
+                    document.getElementById('resultMessage').className = "text-center font-bold h-8 text-lg text-green-600";
                 } else displaySolutionAndPause(false);
             } else {
                 if (can === canonicalizeEquation(currentQuestion.answerEq2, currentQuestion.var1, currentQuestion.var2)) { score++; displaySolutionAndPause(true); } else displaySolutionAndPause(false);
@@ -857,11 +814,10 @@
     function displaySolutionAndPause(isFinalCorrect) {
         document.getElementById('inputContainer').classList.add('hidden');
         const msg = document.getElementById('resultMessage'); const solBox = document.getElementById('solutionDisplay');
-        if (isFinalCorrect) { msg.textContent = "Correct!"; msg.className = "text-center font-semibold h-6 text-green-600"; solBox.classList.add('bg-green-100'); solBox.classList.remove('bg-red-100'); }
-        else { msg.textContent = "Incorrect."; msg.className = "text-center font-semibold h-6 text-red-600"; solBox.classList.add('bg-red-100'); solBox.classList.remove('bg-green-100'); }
+        if (isFinalCorrect) { msg.textContent = "Correct!"; msg.className = "text-center font-bold h-8 text-lg text-green-600"; }
+        else { msg.textContent = "Incorrect."; msg.className = "text-center font-bold h-8 text-lg text-red-600"; }
         
         let explanation = getExplanation();
-        document.getElementById('solutionTitle').textContent = "Solution:";
         document.getElementById('solutionText').innerHTML = explanation;
         solBox.classList.remove('hidden');
         nextButton.classList.remove('hidden');
@@ -873,6 +829,19 @@
         document.getElementById('finalTotal').textContent = MAX_QUESTIONS;
         document.getElementById('finalDifficulty').textContent = currentDifficulty;
         document.getElementById('finalTopic').textContent = currentSubject;
+        
+        // --- Populate Name and Timestamp ---
+        document.getElementById('finalStudentName').textContent = studentNameInput.value || "Anonymous";
+        document.getElementById('finalTimestamp').textContent = new Date().toLocaleString();
+
+        // --- STREAK CHECK ---
+        const increased = checkAndIncrementStreak(score, currentSubject);
+        if (increased) {
+            streakMessage.classList.remove('hidden');
+        } else {
+            streakMessage.classList.add('hidden');
+        }
+
         renderScreen('resultsCard');
     }
 
@@ -882,7 +851,19 @@
 
     // --- Init ---
     maxQuestionsTracker.textContent = MAX_QUESTIONS;
+    
+    // Load saved name
+    const savedName = localStorage.getItem('math_quiz_student_name');
+    if (savedName) {
+        studentNameInput.value = savedName;
+    }
+    
+    studentNameInput.addEventListener('input', (e) => {
+        localStorage.setItem('math_quiz_student_name', e.target.value);
+    });
+
     renderScreen('mainMenu'); 
+    initStreak();
     
     // --- Re-attach Modal Logic ---
     function showModal(msg, action) {
