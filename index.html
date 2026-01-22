@@ -36,31 +36,44 @@
         .equation-block {
             background-color: #ffffff;
             border: 1px solid #e5e7eb;
-            padding: 1.5rem 2rem;
+            padding: 1.5rem 1rem;
             border-radius: 1rem;
-            font-family: "Times New Roman", Times, serif; /* Math-like font */
-            font-size: 1.35rem;
-            line-height: 1.6;
+            font-family: "Times New Roman", Times, serif; 
+            font-size: 1.4rem;
+            line-height: 2.2; 
             color: #1f2937;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            max-width: 100%;
-            width: fit-content;
+            width: 100%;
             margin: 1.5rem auto;
             text-align: left;
+            overflow-x: auto; 
+            white-space: nowrap;
+            /* Scrollbar styling */
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+        .equation-block::-webkit-scrollbar {
+            height: 6px;
+        }
+        .equation-block::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 3px;
         }
         
         /* Math Variable Styling */
         .math-var {
             font-style: italic;
             font-family: "Times New Roman", Times, serif;
+            margin-left: 2px;
+            margin-right: 2px;
         }
 
         /* Vertical Fraction Styling */
         .fraction {
             display: inline-block;
-            vertical-align: middle;
+            vertical-align: middle; 
             text-align: center;
-            font-size: 0.85em;
+            font-size: 0.9em;
             margin: 0 0.2em;
         }
         .fraction > span {
@@ -72,12 +85,12 @@
             padding-bottom: 1px;
         }
         .fraction span.denominator {
-            border-top: 1px solid transparent;
+            border-top: 1px solid transparent; 
             padding-top: 1px;
         }
         
         #solutionText {
-            line-height: 1.7;
+            line-height: 1.8;
             text-align: left;
         }
     </style>
@@ -193,7 +206,7 @@
 
         <div id="feedbackContainer">
             <p id="resultMessage" class="text-center font-bold h-8 text-lg"></p>
-            <div id="solutionDisplay" class="hidden mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 text-gray-800 shadow-inner">
+            <div id="solutionDisplay" class="hidden mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 text-gray-800 shadow-inner overflow-x-auto">
                 <p class="font-bold mb-3 text-xl text-gray-900 border-b pb-2" id="solutionTitle">Solution</p>
                 <div id="solutionText" class="text-base"></div>
             </div>
@@ -396,19 +409,40 @@
     // --- Utils ---
     const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
     const toFractionString = (num) => {
-        if (num === 0) return '0'; if (num % 1 === 0) return num.toString();
-        const sign = num < 0 ? '-' : ''; const absNum = Math.abs(num); const fractionalPart = absNum - Math.floor(absNum);
-        const tolerance = 1.0E-6; let numerator = 0; let denominator = 1;
+        // Fix 1: Handle float zero effectively
+        if (Math.abs(num) < 1e-9) return '0';
+        // Fix 2: Handle float integers
+        if (Math.abs(num % 1) < 1e-9 || Math.abs(Math.abs(num % 1) - 1) < 1e-9) return Math.round(num).toString();
+        
+        const sign = num < 0 ? '-' : '';
+        const absNum = Math.abs(num);
+        const fractionalPart = absNum - Math.floor(absNum);
+        const tolerance = 1.0E-6;
+        let numerator = 0;
+        let denominator = 1;
+        
         for (let d = 2; d <= 10; d++) {
             let n = Math.round(fractionalPart * d);
             if (Math.abs(fractionalPart * d - n) < tolerance) {
-                numerator = n; denominator = d; const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b));
-                const commonDivisor = gcd(numerator, denominator); numerator /= commonDivisor; denominator /= commonDivisor; break;
+                numerator = n;
+                denominator = d;
+                const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b));
+                const commonDivisor = gcd(numerator, denominator);
+                numerator /= commonDivisor;
+                denominator /= commonDivisor;
+                break;
             }
         }
-        const integerPart = Math.floor(absNum); numerator = integerPart * denominator + numerator;
-        // Return HTML Structure for Fraction
-        return `${sign}<span class="fraction"><span class="numerator">${numerator}</span><span class="denominator">${denominator}</span></span>`;
+        
+        const integerPart = Math.floor(absNum);
+        // Correct logic for improper fraction:
+        const finalNum = integerPart * denominator + numerator;
+        
+        // If final numerator is 0 (should be caught above, but safety check)
+        if (finalNum === 0) return '0';
+
+        // Return simple string format for logic parsing
+        return `${sign}${finalNum}/${denominator}`;
     };
     
     // New Format Coefficient using HTML for fractions
@@ -416,12 +450,18 @@
         const vHtml = `<span class="math-var">${variable}</span>`;
         if (typeof a === 'string' && a.includes('/')) {
             const parts = a.split('/'); let num = parseInt(parts[0]); const den = parseInt(parts[1]);
+            // Check for zero fraction
+            if (num === 0) return '0';
+            
             let sign = ''; if (num < 0) { sign = '-'; num = Math.abs(num); }
             // HTML Fraction
             const fracHtml = `<span class="fraction"><span class="numerator">${num}</span><span class="denominator">${den}</span></span>`;
             if (num === 1 && den !== 1) return `${sign}${fracHtml}${vHtml}`;
             return `${sign}${fracHtml}${vHtml}`;
         }
+        // Handle string '0' input
+        if (a === '0') return '0';
+        
         if (a === 1) return vHtml; 
         if (a === -1) return '-' + vHtml; 
         return a + vHtml;
@@ -436,6 +476,10 @@
         if (typeof coeff === 'string' && coeff.includes('/')) {
             if (coeff.startsWith('-')) {
                 isNegative = true;
+                // substring(1) might leave 0/4. Need to handle that.
+                // Better: rely on formatCoefficient to handle sign if passed correctly.
+                // But here we need to strip sign for display.
+                // Let's re-parse
                 termStr = formatCoefficient(coeff.substring(1), variable);
             } else {
                 isNegative = false;
@@ -449,6 +493,9 @@
             else if (!variable) termStr = absCoeff; // Constant term
             else termStr = absCoeff + vHtml;
         }
+
+        // Safety: if termStr became '0', return '' (or handle as zero term)
+        if (termStr === '0') return '';
 
         if (isNegative) return ' - ' + termStr;
         else if (includeSign) return ' + ' + termStr;
@@ -594,7 +641,14 @@
         do { a1Num = randInt(1,4); b1Num = randInt(1,4); a2Num = randInt(1,4); b2Num = randInt(1,4); if(fracPosition===0) a1Num=fracVal; else if(fracPosition===1) b1Num=fracVal; else if(fracPosition===2) a2Num=fracVal; else b2Num=fracVal; if(Math.abs(a1Num*b2Num-a2Num*b1Num)>0.001) break; } while(true);
         c1 = a1Num*x + b1Num*y; c2 = a2Num*x + b2Num*y;
         a1 = fracPosition===0 ? fracStr : a1Num; b1 = fracPosition===1 ? fracStr : b1Num; a2 = fracPosition===2 ? fracStr : a2Num; b2 = fracPosition===3 ? fracStr : b2Num;
-        const eq1Str = formatCoefficient(a1, 'x') + formatTerm(b1, 'y') + ' = ' + toFractionString(c1); const eq2Str = formatCoefficient(a2, 'x') + formatTerm(b2, 'y') + ' = ' + toFractionString(c2);
+        
+        // Corrected usage: convert fraction string to HTML using wrapper
+        const c1Html = formatCoefficient(toFractionString(c1), '');
+        const c2Html = formatCoefficient(toFractionString(c2), '');
+        
+        const eq1Str = formatCoefficient(a1, 'x') + formatTerm(b1, 'y') + ' = ' + c1Html; 
+        const eq2Str = formatCoefficient(a2, 'x') + formatTerm(b2, 'y') + ' = ' + c2Html;
+        
         return { title: 'Solve Equations (Difficult - Fraction)', formula: '', question: `Solve:<div class="equation-block">${eq1Str} --- (1)<br>${eq2Str} --- (2)</div>`, answerX: x, answerY: y, eq1: {a: a1Num, b: b1Num, c: c1, str: eq1Str}, eq2: {a: a2Num, b: b2Num, c: c2, str: eq2Str}, fracPosition: fracPosition };
     };
     const generateLinearCombinationProblem_Simple = () => { 
@@ -639,14 +693,71 @@
         let isoStr = ''; if (Math.abs(intercept) < 0.001) isoStr = `${subjectVar} = ${formatTerm(slopeStr, otherVar, false)}`; else isoStr = `${subjectVar} = ${interceptStr} ${formatTerm(slopeStr, otherVar, true)}`;
         explanation += `<strong>Step 1: Make ${subjectVar} the subject</strong><br>From (${targetEqNum}),<div class="equation-block">${targetEq.str}<br>${step1_inter}<br>${isoStr} --- (3)</div><br>`;
         const subA = (subjectVar === 'x') ? otherEq.a : otherEq.b; const subB = (subjectVar === 'x') ? otherEq.b : otherEq.a; const subC = otherEq.c; const subExpression = isoStr.split('=')[1].trim();
-        const expandedConst = subA * intercept; const expandedVarCoeff = subA * slope; const finalVarCoeff = expandedVarCoeff + subB; const finalConstRight = subC - expandedConst;
-        let subAStr = toFractionString(subA); let subBStr = toFractionString(subB); let subCStr = toFractionString(subC); let expConstStr = toFractionString(expandedConst); let expVarCoeffStr = toFractionString(expandedVarCoeff); let finalVarCoeffStr = toFractionString(finalVarCoeff); let finalConstRightStr = toFractionString(finalConstRight);
-        let line1 = `${formatCoefficient(subAStr, '')}(${subExpression}) ${formatTerm(subBStr, otherVar)} = ${subCStr}`;
-        let line2_term1 = (Math.abs(expandedConst) < 0.001) ? '' : expConstStr; let line2_term2 = formatTerm(expVarCoeffStr, otherVar, line2_term1 !== ''); let line2 = `${line2_term1} ${line2_term2} ${formatTerm(subBStr, otherVar, true)} = ${subCStr}`.trim().replace(/^\+\s*/, '');
-        let line3 = `${formatCoefficient(finalVarCoeffStr, otherVar)} = ${finalConstRightStr}`; let solvedOtherValStr = toFractionString(finalConstRight / finalVarCoeff);
+        
+        // Calculation strings
+        const expandedConst = subA * intercept; 
+        const expandedVarCoeff = subA * slope; 
+        const finalVarCoeff = expandedVarCoeff + subB; 
+        const finalConstRight = subC - expandedConst;
+        
+        // Helper to format consts to HTML
+        const fmtC = (val) => formatCoefficient(toFractionString(val), '');
+        
+        let subAStr = fmtC(subA); 
+        let subBStr = fmtC(subB); 
+        let subCStr = fmtC(subC);
+        
+        let expConstStr = fmtC(expandedConst); 
+        let expVarCoeffStr = toFractionString(expandedVarCoeff); // Keep raw for formatTerm
+        
+        let finalVarCoeffStr = fmtC(finalVarCoeff); 
+        let finalConstRightStr = fmtC(finalConstRight);
+
+        // Correct formatting for substitution display
+        let line1_term1 = formatCoefficient(toFractionString(subA), '');
+        // Use toFractionString for subB to ensure fraction format if needed
+        let line1_term2 = formatTerm(toFractionString(subB), otherVar, true); 
+        let line1_rhs = formatCoefficient(toFractionString(subC), '');
+
+        // --- FIXED LINE 1 CONSTRUCTION ---
+        // Instead of reusing split(), rebuild the subExpression using formatCoefficient
+        // interceptStr is raw string. slopeStr is raw string.
+        const intHtml = formatCoefficient(interceptStr, '');
+        const slpHtml = formatTerm(slopeStr, otherVar, true); // true = include sign always
+        
+        const safeSubExpr = `${intHtml} ${slpHtml}`;
+        
+        let line1 = `${line1_term1}(${safeSubExpr}) ${line1_term2} = ${line1_rhs}`;
+        
+        // For Line 2 (Expansion)
+        let line2_term1 = (Math.abs(expandedConst) < 0.001) ? '' : expConstStr;
+        // Use formatTerm on raw fraction string for variable coefficient
+        let line2_term2 = formatTerm(expVarCoeffStr, otherVar, line2_term1 !== '');
+        let line2 = `${line2_term1} ${line2_term2} ${formatTerm(toFractionString(subB), otherVar, true)} = ${formatCoefficient(toFractionString(subC), '')}`.trim().replace(/^\+\s*/, '');
+        
+        // For Line 3 (Simplification)
+        // finalVarCoeffStr is HTML, which works if it looks like "<span>...</span>variable"
+        // But formatCoefficient returns coefficient HTML + variable HTML.
+        // We want coefficient HTML + variable HTML.
+        let line3 = `${formatCoefficient(toFractionString(finalVarCoeff), otherVar)} = ${finalConstRightStr}`; 
+        
+        let solvedOtherValStr = formatCoefficient(toFractionString(finalConstRight / finalVarCoeff), '');
+
         explanation += `<strong>Step 2: Substitution to the other equation</strong><br>Substitute (3) into (${otherEqNum})<div class="equation-block">${line1}<br>${line2}<br>${line3}<br>${otherVar} = ${solvedOtherValStr}</div><br>`;
-        const solvedOtherVal = finalConstRight / finalVarCoeff; const finalMainVal = intercept + slope * solvedOtherVal; const finalMainValStr = toFractionString(finalMainVal);
-        let subEq3 = ''; if (Math.abs(intercept) < 0.001) { subEq3 = `${subjectVar} = ${formatCoefficient(slopeStr, '')}(${solvedOtherValStr})`; } else { subEq3 = `${subjectVar} = ${interceptStr} ${formatTerm(slopeStr, '', true)}(${solvedOtherValStr})`; }
+        
+        const solvedOtherVal = finalConstRight / finalVarCoeff; 
+        const finalMainVal = intercept + slope * solvedOtherVal; 
+        const finalMainValStr = formatCoefficient(toFractionString(finalMainVal), '');
+        
+        // Recalculate subEq3 logic to use formatted strings
+        let subEq3 = ''; 
+        if (Math.abs(intercept) < 0.001) { 
+            subEq3 = `${subjectVar} = ${formatCoefficient(slopeStr, '')}(${solvedOtherValStr})`; 
+        } else { 
+            // formatTerm(slopeStr...) handles raw string slope correctly
+            subEq3 = `${subjectVar} = ${formatCoefficient(interceptStr, '')} ${formatTerm(slopeStr, '', true)}(${solvedOtherValStr})`; 
+        }
+        
         explanation += `<strong>Step 3: Substitute your answer to any equation</strong><br>Substitute ${otherVar} = ${solvedOtherValStr} into (3)<div class="equation-block">${subEq3}<br>${subjectVar} = ${finalMainValStr}</div><br>`;
         explanation += `<strong>Step 4: Draw the conclusion</strong><br>The solution is x = ${x_ans}, y = ${y_ans}.`;
         return explanation;
