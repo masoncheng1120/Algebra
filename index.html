@@ -666,7 +666,62 @@
         const problem = `${teamName} played a total of ${G} games. Wins (x) get ${P_win} points, losses (y) get ${P_loss} point. They earned ${P} points in total.<br><br>Write down the two simultaneous equations that represent this situation.`;
         return { title: 'Formulate Equations (Simple)', formula: '', question: problem, var1: 'x', var2: 'y', answerEq1: `x + y = ${G}`, answerEq2: `${P_win}x + ${P_loss}y = ${P}`, generatorType: 'points_total' };
     };
-    const simpleFormulationGenerators = [generateLinearCombinationProblem_Simple, generatePointsSystemProblem_Simple];
+    
+    // --- NEW FORMULATION GENERATORS ---
+    const generateSumDiffProblem = () => {
+        const y = randInt(1, 10);
+        const x = y + randInt(1, 10); // x is larger
+        const sum = x + y;
+        const diff = x - y;
+        const question = `There are two numbers. The sum of the two numbers is ${sum} and their difference is ${diff}.<br><br>Let the larger number be x and the smaller number be y.<br>Set up the appropriate simultaneous equations.`;
+        return {
+            title: 'Formulate Equations (Sum/Diff)',
+            formula: '',
+            question: question,
+            var1: 'x',
+            var2: 'y',
+            answerEq1: `x + y = ${sum}`,
+            answerEq2: `x - y = ${diff}`,
+            explanation: `Sum is ${sum} → x + y = ${sum}<br>Difference is ${diff} → x - y = ${diff}`
+        };
+    };
+
+    const generateTestMarksProblem = () => {
+        const totalQ = [10, 15, 20, 25][randInt(0, 3)];
+        const m = randInt(2, 5); // marks for correct
+        const n = randInt(1, 3); // marks deducted
+        
+        // Student 1
+        const c1 = randInt(Math.floor(totalQ/2) + 1, totalQ - 1);
+        const w1 = totalQ - c1;
+        const s1 = c1 * m - w1 * n;
+        
+        // Student 2
+        let c2;
+        do { c2 = randInt(Math.floor(totalQ/2) + 1, totalQ - 1); } while(c2 === c1);
+        const w2 = totalQ - c2;
+        const s2 = c2 * m - w2 * n;
+
+        const question = `There are ${totalQ} questions in a test. For each correctly answered question, m marks will be given. For each wrongly answered question, n marks will be deducted.<br><br>With all questions answered:<br>- Student A got ${c1} questions correct with ${s1} marks.<br>- Student B got ${c2} questions correct with ${s2} marks.<br><br>Set up the simultaneous equations to find m and n.`;
+        
+        return {
+            title: 'Formulate Equations (Test Marks)',
+            formula: '',
+            question: question,
+            var1: 'm',
+            var2: 'n',
+            answerEq1: `${c1}m - ${w1}n = ${s1}`,
+            answerEq2: `${c2}m - ${w2}n = ${s2}`,
+            explanation: `Student A: ${c1} correct, ${w1} wrong → ${c1}m - ${w1}n = ${s1}<br>Student B: ${c2} correct, ${w2} wrong → ${c2}m - ${w2}n = ${s2}`
+        };
+    };
+
+    const simpleFormulationGenerators = [
+        generateLinearCombinationProblem_Simple, 
+        generatePointsSystemProblem_Simple,
+        generateSumDiffProblem,
+        generateTestMarksProblem
+    ];
 
     // --- MASTER GENERATOR CONTROLLER ---
     const generators = {
@@ -761,6 +816,24 @@
         explanation += `<strong>Step 3: Substitute your answer to any equation</strong><br>Substitute ${otherVar} = ${solvedOtherValStr} into (3)<div class="equation-block">${subEq3}<br>${subjectVar} = ${finalMainValStr}</div><br>`;
         explanation += `<strong>Step 4: Draw the conclusion</strong><br>The solution is x = ${x_ans}, y = ${y_ans}.`;
         return explanation;
+    };
+
+    // --- NEW EXPLANATION FUNCTION FOR FORMULATION ---
+    const generateFormulationExplanation = (q) => {
+        let expl = `<strong>Correct Equations:</strong><br>
+        <div class="equation-block">
+        (1) ${q.answerEq1}<br>
+        (2) ${q.answerEq2}
+        </div>`;
+        
+        if (q.explanation) {
+            expl += `<br><strong>Reasoning:</strong><br>${q.explanation}`;
+        } else if (q.generatorType === 'linear_combination') {
+             // Fallback for existing linear combo
+             expl += `<br>Cost of ${q.question.match(/buys (\d+)/)?.[1] || 'items'} + Cost of others = Total`;
+        }
+        
+        return expl;
     };
 
     const getExplanation = () => {
